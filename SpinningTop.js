@@ -454,11 +454,6 @@ function Top() {
 
     //  オイラーパラメータの時間微分(20.48)
     var DEoa = math.multiply(math.transpose(Soa), Omoa);
-    //  オイラーパラメータの安定化手法
-    //  normalizeを入れられるので省いてみる
-    // var tmp = math.subtract(1, math.divide(1, math.multiply(math.transpose(Eoa), Eoa)));
-    // tmp = math.divide(math.multiply(Eoa, tmp), self.TAU);
-    // DEoa = math.subtract(DEoa, tmp);
     DEoa = math.map(DEoa, function(val) { return val * 0.5; });       //  全体を2で割る
 
     //  角速度の時間微分を方程式の解から取得
@@ -473,68 +468,10 @@ function Top() {
 
     //  結果を配列にして返す
     var DY = [];
-    DY = DY.concat(MB.makeRowArray(DEoa,  0, 4));
-    DY = DY.concat(MB.makeRowArray(DOmoa, 0, 3));
-    DY = DY.concat(MB.makeRowArray(DRoa, 0, 3));
-    DY = DY.concat(MB.makeRowArray(DVoa, 0, 3));
-
-    return DY;
-  };
-
-  //------------------------------------------------------------------------------
-  //  コマの微分方程式
-  this.updatePhysics_140 = function(param) {
-
-    //  パラメータを配列から抽出
-    var Eoa  = MB.makeColumnArray(param, 0, 4);   //  オイラーパラメータ
-    var Omoa = MB.makeColumnArray(param, 4, 3);   //  角速度
-    var Roa  = MB.makeColumnArray(param, 7, 3);   //  重心位置
-    var Voa  = MB.makeColumnArray(param, 10, 3);  //  重心速度
-
-    //  オイラーパラメータから回転行列を作る
-    var Coa = MB.EtoC(Eoa);
-    //  オイラーパラメータからS行列を作る
-    var Soa = MB.EtoS(Eoa);
-
-    //  角速度から外積オペレータを作る
-    var TILDEOmoa = MB.TILDE(Omoa);
-
-    //  オイラーパラメータの時間微分
-    var DEoa = math.multiply(math.transpose(Soa), Omoa);
-    DEoa = math.map(DEoa, function(val) { return val * 0.5; });
-    //  重心位置の時間微分
-    var DRoa = Voa;
-
-    //  支点の位置
-    var Rop = math.add(Roa, math.multiply(Coa, self.Rap));
-    //  支点の速度
-    var Vop = math.multiply(math.multiply(Coa, self.TILDERap), Omoa);
-    Vop = math.subtract(Voa, Vop);
-
-    //  支点に働くばねとダンピング力
-    var Fop = math.multiply(Rop, -self.KKp);            //  原点からのずれによるばね力
-    Fop = math.subtract(Fop, math.multiply(Vop, self.CCp));  //  支点の移動速度によるダンパー
-
-    //  FopとNopの等価換算＋重力
-    var Foa = math.add(self.DyMag, Fop);
-    //  トルクのFopとNopの等価換算
-    var CoaT = math.transpose(Coa);
-    var Noa = math.multiply(self.TILDERap, math.multiply(CoaT, Fop));
-
-    //  角速度の時間微分
-    var RTrq = math.multiply(math.multiply(TILDEOmoa, self.Joa), Omoa);
-    var DOmoa = math.subtract(Noa, RTrq);
-    DOmoa = math.multiply(self.invJoa, DOmoa);
-
-    //  速度の時間微分
-    var DVoa = math.divide(Foa, self.mass);
-
-    //  結果を配列にして返す
-    var DY = [];
-    DY = DY.concat(MB.makeRowArray(DEoa,  0, 4));
-    DY = DY.concat(MB.makeRowArray(DOmoa, 0, 3));
-    DY = DY.concat(MB.makeRowArray(DRoa, 0, 3));
-    DY = DY.concat(MB.makeRowArray(DVoa, 0, 3));
+    DY = DY.concat(MB.makeRowArray(DEoa,  0, 4));         //  角速度
+    DY = DY.concat(MB.makeRowArray(DOmoa, 0, 3));         //  角加速度
+    DY = DY.concat(MB.makeRowArray(DRoa, 0, 3));          //  速度
+    DY = DY.concat(MB.makeRowArray(DVoa, 0, 3));          //  加速度
 
     return DY;
   };
@@ -631,3 +568,4 @@ function Top() {
 
 })();
 
+//  とりあえず回転運動させるにはどうしたらいいか見直してみよう
