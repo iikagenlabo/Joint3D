@@ -25,9 +25,11 @@ var pause = true;
 var GRAVITY = 9.81;
 //  ステップ時間
 var DeltaT = 0.001;
-//var DeltaT = 0.001;
+
 //  updateのループ開始数
 var UpdateLoopCnt = 10;
+
+var rigid_body;
 
 //------------------------------------------------------------------------------
 //  初期化処理.
@@ -109,6 +111,11 @@ function init() {
   top_obj.addTopModel2();
   top_obj.initialize();
 
+  rigid_body = new RigidBody();
+  scene.add(rigid_body.createModel());
+
+  //  速度を入れてみる
+  rigid_body.velocity.y = 10;
 }
 
 //------------------------------------------------------------------------------
@@ -134,6 +141,10 @@ function animate() {
     for(var lp1 = 0; lp1 < UpdateLoopCnt; lp1++) {
       top_obj.update(key_input);
     }
+
+    //  剛体テスト
+    rigid_body.exec(DeltaT);
+    rigid_body.updatePosRot();
   }
 };
 
