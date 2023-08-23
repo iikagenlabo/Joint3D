@@ -116,6 +116,11 @@ function init() {
 
   //  速度を入れてみる
   rigid_body.velocity.y = 10;
+  //  回転テスト
+  // rigid_body.omega.z = 10;
+  rigid_body.omega.y = 30;
+  rigid_body.quaternion.setFromEuler(new THREE.Euler(Math.PI/4, 0, 0));
+
 }
 
 //------------------------------------------------------------------------------

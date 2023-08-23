@@ -1,3 +1,6 @@
+//  マルチボディライブラリ
+var MB = new MBFunc3D();
+
 class RigidBody {
     constructor() {
         this.position = new THREE.Vector3();
@@ -23,6 +26,7 @@ class RigidBody {
     // }
 
     createModel() {
+        //  仮の円柱モデル
         var material = new THREE.MeshPhongMaterial({
             color: 0x4040ff,
             shading: THREE.FlatShading
@@ -50,8 +54,33 @@ class RigidBody {
         dvel.multiplyScalar(delta_t);
         this.position.add(dvel);
 
-        //  回転角を更新する
+        //  オイラ―パラメータからS行列を求める
+        // let S = MB.EtoS(this.quatToArray());
+        //  角速度からオイラ―パラメータの時間微分を求める ST * Omega /2
+        // let dE = math.multiply(math.transpose(S), this.omegaToArray(delta_t*0.5));  //  全体を２で割る
 
+        let dq_mtx = this.omegaToDQuatMatrix(delta_t*0.5);
+        let dE = math.multiply(dq_mtx, this.quatToArray());
+
+        console.log(dE[0][0], dE[1][0], dE[2][0], dE[3][0]);
+
+        //  回転角を更新する
+        let dq = new THREE.Quaternion();
+        dq.set(dE[1][0], dE[2][0], dE[3][0], dE[0][0]);
+        //  試しに回転
+        // dq.setFromEuler(new THREE.Euler(0.01, 0, 0));
+
+        // dq.multiply(this.quaternion);
+        // dq.normalize();
+        dq.x += this.quaternion.x;
+        dq.y += this.quaternion.y;
+        dq.z += this.quaternion.z;
+        dq.w += this.quaternion.w;
+        dq.normalize();
+
+        this.quaternion.copy(dq);
+
+        // this.quaternion.normalize();
     }
 
     //  位置と回転角をモデルに反映
@@ -64,4 +93,42 @@ class RigidBody {
         this.model.position.copy(this.position);
     }
 
+    //  THREE.Quaternion をオイラ―パラメータの配列に変換
+    quatToArray() {
+        return [
+            [this.quaternion.w],
+            [this.quaternion.x],
+            [this.quaternion.y],
+            [this.quaternion.z]
+        ];
+    }
+
+    omegaToArray(dt = 1) {
+        return [
+            [this.omega.x * dt],
+            [this.omega.y * dt],
+            [this.omega.z * dt]
+        ];
+    }
+
+    omegaToDQuatMatrix(dt = 1) {
+        let om = this.omega.clone();
+        om.multiplyScalar(dt);
+
+        //  位置ベクトルの回転
+        return [
+            [0,     -om.z,  om.y,  om.x],
+            [ om.z,     0, -om.x,  om.y],
+            [-om.y,  om.x,     0,  om.z],
+            [-om.x, -om.y, -om.z,     0]
+        ];
+
+        //  座標系の回転
+        // return [
+        //     [0,      om.z, -om.y,  om.x],
+        //     [-om.z,     0,  om.x,  om.y],
+        //     [ om.y, -om.x,     0,  om.z],
+        //     [-om.x, -om.y, -om.z,     0]
+        // ];
+    }
 }
