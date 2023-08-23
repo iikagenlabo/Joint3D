@@ -59,10 +59,11 @@ class RigidBody {
         //  角速度からオイラ―パラメータの時間微分を求める ST * Omega /2
         // let dE = math.multiply(math.transpose(S), this.omegaToArray(delta_t*0.5));  //  全体を２で割る
 
+        //  角速度からオイラ―パラメータの時間微分を求める
         let dq_mtx = this.omegaToDQuatMatrix(delta_t*0.5);
         let dE = math.multiply(dq_mtx, this.quatToArray());
 
-        console.log(dE[0][0], dE[1][0], dE[2][0], dE[3][0]);
+        // console.log(dE[0][0], dE[1][0], dE[2][0], dE[3][0]);
 
         //  回転角を更新する
         let dq = new THREE.Quaternion();
@@ -79,8 +80,6 @@ class RigidBody {
         dq.normalize();
 
         this.quaternion.copy(dq);
-
-        // this.quaternion.normalize();
     }
 
     //  位置と回転角をモデルに反映
