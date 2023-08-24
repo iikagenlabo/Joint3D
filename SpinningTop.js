@@ -100,6 +100,7 @@ function init() {
   controls.target.set(0, 3, 0);
   controls.addEventListener('change', render);
   controls.update();
+  controls.enableKeys = false;
 
   //  キー入力
   key_input.initialize();
@@ -118,9 +119,9 @@ function init() {
   // rigid_body.velocity.y = 10;
   //  回転テスト
   // rigid_body.omega.z = 10;
-  rigid_body.omega.z = 30;
+  // rigid_body.omega.z = 20;
   // rigid_body.omega.y = 30;
-  rigid_body.quaternion.setFromEuler(new THREE.Euler(Math.PI/4, 0, 0));
+  // rigid_body.quaternion.setFromEuler(new THREE.Euler(Math.PI/4, 0, 0));
 
 }
 
@@ -142,6 +143,17 @@ function animate() {
   if (pause == false || (key_input.trigger & key_input.step)) {
     //  カメラ移動
 //    controls.update();
+
+    rigid_body.omega.set(0, 0, 0);
+    if(key_input.left)
+      rigid_body.omega.z =  20;
+    if(key_input.right)
+      rigid_body.omega.z = -20;
+    if(key_input.up)
+      rigid_body.omega.x = -20;
+    if(key_input.down)
+      rigid_body.omega.x =  20;
+
 
     //  コマの運動計算.
     for(var lp1 = 0; lp1 < UpdateLoopCnt; lp1++) {

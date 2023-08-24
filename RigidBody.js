@@ -56,23 +56,43 @@ class RigidBody {
         let dq_mtx = this.omegaToDQuatMatrix(delta_t*0.5);
         let dE = math.multiply(dq_mtx, this.quatToArray());
 
+        //  クォータニオンの時間微分
+        //  https://qiita.com/GANTZ/items/8a9d52c91cce902b44c9
+        // let vec_qw = [[0], [this.omega.x], [this.omega.y], [this.omega.z]];
+        let vec_qw = new THREE.Quaternion(this.omega.x, this.omega.y, this.omega.z, 0);
+        let vec_dq = this.quaternion.clone();
+        vec_dq.multiply(vec_qw);
+        vec_dq.x *= 0.5 * delta_t;
+        vec_dq.y *= 0.5 * delta_t;
+        vec_dq.z *= 0.5 * delta_t;
+        vec_dq.w *= 0.5 * delta_t;
+
         // console.log(dE[0][0], dE[1][0], dE[2][0], dE[3][0]);
 
+        //  回転角を更新
+        let q = this.quaternion.clone();
+        q.x += vec_dq.x;
+        q.y += vec_dq.y;
+        q.z += vec_dq.z;
+        q.w += vec_dq.w;
+        q.normalize();
+        this.quaternion.copy(q);
+
         //  回転角を更新する
-        let dq = new THREE.Quaternion();
-        dq.set(dE[1][0], dE[2][0], dE[3][0], dE[0][0]);
-        //  試しに回転
-        // dq.setFromEuler(new THREE.Euler(0.01, 0, 0));
+        // let dq = new THREE.Quaternion();
+        // dq.set(dE[1][0], dE[2][0], dE[3][0], dE[0][0]);
+        // //  試しに回転
+        // // dq.setFromEuler(new THREE.Euler(0.01, 0, 0));
 
-        // dq.multiply(this.quaternion);
+        // // dq.multiply(this.quaternion);
+        // // dq.normalize();
+        // dq.x += this.quaternion.x;
+        // dq.y += this.quaternion.y;
+        // dq.z += this.quaternion.z;
+        // dq.w += this.quaternion.w;
         // dq.normalize();
-        dq.x += this.quaternion.x;
-        dq.y += this.quaternion.y;
-        dq.z += this.quaternion.z;
-        dq.w += this.quaternion.w;
-        dq.normalize();
 
-        this.quaternion.copy(dq);
+        // this.quaternion.copy(dq);
     }
 
     //  位置と回転角をモデルに反映
