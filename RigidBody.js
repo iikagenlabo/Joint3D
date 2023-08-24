@@ -18,13 +18,6 @@ class RigidBody {
         this.Width = 1;
     }
 
-    // addScene(scene) {
-    //     const box = new THREE.Box3();
-    //     box.setFromCenterAndSize(new THREE.Vector3(1, 1, 1), new THREE.Vector3(0, 0, 0))
-    //     this.model = new THREE.Box3Helper(box, 0xffff00);
-    //     scene.add(this.model);
-    // }
-
     createModel() {
         //  仮の円柱モデル
         var material = new THREE.MeshPhongMaterial({
@@ -114,12 +107,19 @@ class RigidBody {
         let om = this.omega.clone();
         om.multiplyScalar(dt);
 
-        //  位置ベクトルの回転
+        //  位置ベクトルの回転(x, y, z, w)
+        // return [
+        //     [0,     -om.z,  om.y,  om.x],
+        //     [ om.z,     0, -om.x,  om.y],
+        //     [-om.y,  om.x,     0,  om.z],
+        //     [-om.x, -om.y, -om.z,     0]
+        // ];
+        //  (w, x, y, z)
         return [
-            [0,     -om.z,  om.y,  om.x],
-            [ om.z,     0, -om.x,  om.y],
-            [-om.y,  om.x,     0,  om.z],
-            [-om.x, -om.y, -om.z,     0]
+            [0,     -om.x, -om.y, -om.z],
+            [ om.x,     0, -om.z,  om.y],
+            [ om.y,  om.z,     0, -om.x],
+            [ om.z, -om.y,  om.x,     0]
         ];
 
         //  座標系の回転

@@ -107,18 +107,19 @@ function init() {
 
   //  コマのモデルを追加する.
   top_obj = new Top();
-//  top_obj.addTopModel();
-  top_obj.addTopModel2();
+
+  // top_obj.addTopModel2();
   top_obj.initialize();
 
   rigid_body = new RigidBody();
   scene.add(rigid_body.createModel());
 
   //  速度を入れてみる
-  rigid_body.velocity.y = 10;
+  // rigid_body.velocity.y = 10;
   //  回転テスト
   // rigid_body.omega.z = 10;
-  rigid_body.omega.y = 30;
+  rigid_body.omega.z = 30;
+  // rigid_body.omega.y = 30;
   rigid_body.quaternion.setFromEuler(new THREE.Euler(Math.PI/4, 0, 0));
 
 }
