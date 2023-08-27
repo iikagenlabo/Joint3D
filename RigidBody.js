@@ -11,11 +11,32 @@ class RigidBody {
         this.d_omega = [0, 0, 0];
         this.quaternion = new THREE.Quaternion();
 
+        this.mass = 1.0;
+        this.inertia = new THREE.Vector3(1, 1, 1);
+
         this.model = null;
 
         //  円柱用（仮）
         this.radius = 1;
         this.Width = 1;
+    }
+
+    preCalcParameter() {
+        //  慣性モーメントを入れておく
+        this.inertia.x = 0.13;
+        this.inertia.y = 0.056;
+        this.inertia.z = 0.172;
+
+        this.i_mtx = [
+            [this.inertia.x, 0, 0],
+            [0, this.inertia.y, 0],
+            [0, 0, this.inertia.z]
+        ];
+        this.inv_i = [
+            [1/this.inertia.x, 0, 0],
+            [0, 1/this.inertia.y, 0],
+            [0, 0, 1/this.inertia.z]
+        ];
     }
 
     createModel() {
@@ -27,14 +48,23 @@ class RigidBody {
 
         var base = new THREE.Object3D();
 
-        var geom = new THREE.CylinderGeometry(this.radius, this.radius, this.Width, 8);
-        // geom.rotateZ(Math.PI);       //  90度回転
-        var cy0 = new THREE.Mesh(geom, material);
-        // cy0.position.y = this.length/2 - this.length/(count*2) * (i*2 + 1);
-        // cy0.rotateZ(Math.PI / 2);       //  90度回転
+        //  T型の物体を作る
+        let radius = 0.2;
+        let length = 1.0;
+        var geom = new THREE.CylinderGeometry(radius, radius, length, 8);
+        geom.rotateZ(Math.PI/2);       //  90度回転
+        let cy0 = new THREE.Mesh(geom, material);
+        cy0.position.y = -0.4;
         cy0.castShadow = true;
         cy0.receiveShadow = true;
         base.add(cy0);
+
+        let length2 = 0.8;
+        geom = new THREE.CylinderGeometry(radius, radius, length2, 8);
+        let cy1 = new THREE.Mesh(geom, material);
+        cy1.castShadow = true;
+        cy1.receiveShadow = true;
+        base.add(cy1);
 
         this.model = base;
 
@@ -42,6 +72,19 @@ class RigidBody {
     }
 
     exec(delta_t) {
+        //  回転運動のトルクを求める
+        let om = [[this.omega.x], [this.omega.y], [this.omega.z]];
+        let tilde_omega = MB.tilde(om);
+
+        let torque = math.multiply(math.multiply(tilde_omega, this.i_mtx), om);
+        torque = math.multiply(torque, -1);
+        let d_omega = math.multiply(this.inv_i, torque);
+
+        d_omega = math.multiply(d_omega, delta_t);
+        this.omega.x += d_omega[0][0];
+        this.omega.y += d_omega[1][0];
+        this.omega.z += d_omega[2][0];
+
         //  位置を更新
         var dvel = this.velocity.clone();
         dvel.multiplyScalar(delta_t);
@@ -55,6 +98,7 @@ class RigidBody {
         //  角速度からオイラ―パラメータの時間微分を求める
         let dq_mtx = this.omegaToDQuatMatrix(delta_t*0.5);
         let dE = math.multiply(dq_mtx, this.quatToArray());
+        // dE = math.multiply(dE, 0.5 * delta_t);
 
         //  クォータニオンの時間微分
         //  https://qiita.com/GANTZ/items/8a9d52c91cce902b44c9
@@ -71,10 +115,14 @@ class RigidBody {
 
         //  回転角を更新
         let q = this.quaternion.clone();
-        q.x += vec_dq.x;
-        q.y += vec_dq.y;
-        q.z += vec_dq.z;
-        q.w += vec_dq.w;
+        // q.x += vec_dq.x;
+        // q.y += vec_dq.y;
+        // q.z += vec_dq.z;
+        // q.w += vec_dq.w;
+        q.x += dE[1][0];
+        q.y += dE[2][0];
+        q.z += dE[3][0];
+        q.w += dE[0][0];
         q.normalize();
         this.quaternion.copy(q);
 

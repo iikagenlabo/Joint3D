@@ -114,13 +114,16 @@ function init() {
 
   rigid_body = new RigidBody();
   scene.add(rigid_body.createModel());
+  rigid_body.preCalcParameter();
+  rigid_body.position.y = 2.0;
 
   //  速度を入れてみる
   // rigid_body.velocity.y = 10;
   //  回転テスト
   // rigid_body.omega.z = 10;
   // rigid_body.omega.z = 20;
-  // rigid_body.omega.y = 30;
+  rigid_body.omega.x = 20;
+  rigid_body.omega.y = 100;
   // rigid_body.quaternion.setFromEuler(new THREE.Euler(Math.PI/4, 0, 0));
 
 }
@@ -144,15 +147,15 @@ function animate() {
     //  カメラ移動
 //    controls.update();
 
-    rigid_body.omega.set(0, 0, 0);
-    if(key_input.left)
-      rigid_body.omega.z =  20;
-    if(key_input.right)
-      rigid_body.omega.z = -20;
-    if(key_input.up)
-      rigid_body.omega.x = -20;
-    if(key_input.down)
-      rigid_body.omega.x =  20;
+    // rigid_body.omega.set(0, 0, 0);
+    // if(key_input.left)
+    //   rigid_body.omega.z =  20;
+    // if(key_input.right)
+    //   rigid_body.omega.z = -20;
+    // if(key_input.up)
+    //   rigid_body.omega.x = -20;
+    // if(key_input.down)
+    //   rigid_body.omega.x =  20;
 
 
     //  コマの運動計算.
