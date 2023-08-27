@@ -115,6 +115,7 @@ class RigidBody {
 
         //  回転角を更新
         let q = this.quaternion.clone();
+        let dq = new THREE.Quaternion(dE[1][0], dE[2][0], dE[3][0], dE[0][0]);
         // q.x += vec_dq.x;
         // q.y += vec_dq.y;
         // q.z += vec_dq.z;
@@ -123,6 +124,8 @@ class RigidBody {
         q.y += dE[2][0];
         q.z += dE[3][0];
         q.w += dE[0][0];
+        // q.multiply(dq, q);
+
         q.normalize();
         this.quaternion.copy(q);
 
