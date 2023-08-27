@@ -90,6 +90,18 @@ class RigidBody {
         dvel.multiplyScalar(delta_t);
         this.position.add(dvel);
 
+        //  角速度からクォータニオンの時間微分を計算する
+        let omega = this.omega.clone();
+        let qDot = new THREE.Quaternion().setFromAxisAngle(omega.normalize(), this.omega.length()/2).multiply(this.quaternion);
+        // qDot.x = qDot.x * 0.5 * delta_t;
+        // qDot.y = qDot.y * 0.5 * delta_t;
+        // qDot.z = qDot.z * 0.5 * delta_t;
+        // qDot.w = qDot.w * 0.5 * delta_t;
+        qDot.x = qDot.x * 0.5;
+        qDot.y = qDot.y * 0.5;
+        qDot.z = qDot.z * 0.5;
+        qDot.w = qDot.w * 0.5;
+
         //  オイラ―パラメータからS行列を求める
         // let S = MB.EtoS(this.quatToArray());
         //  角速度からオイラ―パラメータの時間微分を求める ST * Omega /2
@@ -105,26 +117,40 @@ class RigidBody {
         // let vec_qw = [[0], [this.omega.x], [this.omega.y], [this.omega.z]];
         let vec_qw = new THREE.Quaternion(this.omega.x, this.omega.y, this.omega.z, 0);
         let vec_dq = this.quaternion.clone();
-        vec_dq.multiply(vec_qw);
-        vec_dq.x *= 0.5 * delta_t;
-        vec_dq.y *= 0.5 * delta_t;
-        vec_dq.z *= 0.5 * delta_t;
-        vec_dq.w *= 0.5 * delta_t;
+        // vec_dq.multiply(vec_qw);
+        // vec_dq.x *= 0.5 * delta_t;
+        // vec_dq.y *= 0.5 * delta_t;
+        // vec_dq.z *= 0.5 * delta_t;
+        // vec_dq.w *= 0.5 * delta_t;
+        vec_qw.multiply(vec_dq);
+        vec_qw.x *= 0.5 * delta_t;
+        vec_qw.y *= 0.5 * delta_t;
+        vec_qw.z *= 0.5 * delta_t;
+        vec_qw.w *= 0.5 * delta_t;
 
         // console.log(dE[0][0], dE[1][0], dE[2][0], dE[3][0]);
 
         //  回転角を更新
         let q = this.quaternion.clone();
-        let dq = new THREE.Quaternion(dE[1][0], dE[2][0], dE[3][0], dE[0][0]);
+        // let dq = new THREE.Quaternion(dE[0][0], dE[1][0], dE[2][0], dE[3][0]);
+        q.x += vec_qw.x;
+        q.y += vec_qw.y;
+        q.z += vec_qw.z;
+        q.w += vec_qw.w;
         // q.x += vec_dq.x;
         // q.y += vec_dq.y;
         // q.z += vec_dq.z;
         // q.w += vec_dq.w;
-        q.x += dE[1][0];
-        q.y += dE[2][0];
-        q.z += dE[3][0];
-        q.w += dE[0][0];
+        // q.x += dE[0][0];
+        // q.y += dE[1][0];
+        // q.z += dE[2][0];
+        // q.w += dE[3][0];
         // q.multiply(dq, q);
+
+        // q.x += qDot.x;
+        // q.y += qDot.y;
+        // q.z += qDot.z;
+        // q.w += qDot.w;
 
         q.normalize();
         this.quaternion.copy(q);
@@ -159,10 +185,10 @@ class RigidBody {
     //  THREE.Quaternion をオイラ―パラメータの配列に変換
     quatToArray() {
         return [
-            [this.quaternion.w],
             [this.quaternion.x],
             [this.quaternion.y],
-            [this.quaternion.z]
+            [this.quaternion.z],
+            [this.quaternion.w]
         ];
     }
 
@@ -202,3 +228,8 @@ class RigidBody {
         // ];
     }
 }
+
+
+
+//  https://qiita.com/GANTZ/items/8a9d52c91cce902b44c9
+
