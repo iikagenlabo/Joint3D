@@ -97,7 +97,7 @@ function init() {
   //  カメラ操作
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.damping = 0.2;
-  controls.target.set(0, 3, 0);
+  controls.target.set(0, 2, 0);
   controls.addEventListener('change', render);
   controls.update();
   controls.enableKeys = false;
@@ -131,6 +131,9 @@ function init() {
   // rigid_body.omega.z = 10;
   rigid_body.omega.x = 0.1;
   rigid_body.omega.y = 10;
+
+  //  表示位置更新
+  rigid_body.updatePosRot();
 }
 
 //------------------------------------------------------------------------------
