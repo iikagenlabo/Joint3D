@@ -23,9 +23,12 @@ class RigidBody {
 
     preCalcParameter() {
         //  慣性モーメントを入れておく
-        this.inertia.x = 0.13;
-        this.inertia.y = 0.056;
-        this.inertia.z = 0.172;
+        // this.inertia.x = 0.13;
+        // this.inertia.y = 0.056;
+        // this.inertia.z = 0.172;
+        this.inertia.x = 1;
+        this.inertia.y = 2;
+        this.inertia.z = 4;
 
         this.i_mtx = [
             [this.inertia.x, 0, 0],
@@ -71,7 +74,91 @@ class RigidBody {
         return base;
     }
 
+    crossQuaternion(a, b) {
+        let q = new THREE.Quaternion();
+
+        q.w = a.w*b.w - a.x*b.x - a.y*b.y - a.z*b.z
+        q.x = a.w*b.x + a.x*b.w + a.y*b.z - a.z*b.y
+        q.y = a.w*b.y - a.x*b.z + a.y*b.w + a.z*b.x
+        q.z = a.w*b.z + a.x*b.y - a.y*b.x + a.z*b.w
+
+        return q;
+    }
+
+    normalizeQuaternion(q) {
+        let len = Math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
+        if (len === 0) {
+            return new THREE.Quaternion(0, 0, 0, 1);
+        } else {
+            len = 1 / len;
+            return new THREE.Quaternion(q.x*len, q.y*len, q.z*len, q.w*len);
+        }
+    }
+
     exec(delta_t) {
+        // let q = this.quaternion;
+        // let w = this.omega;
+        // console.log('Q:', q.w, q.x, q.y, q.z);
+        // console.log('W:', w.x, w.y, w.z);
+
+        //  位置を更新
+        var dvel = this.velocity.clone();
+        dvel.multiplyScalar(delta_t);
+        this.position.add(dvel);
+
+        //  角速度の外積オペレータ
+        let om = [[this.omega.x], [this.omega.y], [this.omega.z]];
+        let tilde_omega = MB.tilde(om);
+
+        //  角加速度の計算
+        let torque = math.multiply(tilde_omega, math.multiply(this.i_mtx, om))
+        torque = math.multiply(torque, -1);
+        let d_omega = math.multiply(this.inv_i, torque);
+
+        //  角速度を更新
+        d_omega = math.multiply(d_omega, delta_t);
+        this.omega.x += d_omega[0][0];
+        this.omega.y += d_omega[1][0];
+        this.omega.z += d_omega[2][0];
+
+        //  角速度からクォータニオンの時間微分を求める(dq = 1/2q*wv)
+        let vec_qw = new THREE.Quaternion(this.omega.x, this.omega.y, this.omega.z, 0);
+        let vec_dq = this.quaternion.clone();
+        // vec_dq.multiply(vec_qw);
+        vec_dq = this.crossQuaternion(vec_dq, vec_qw);
+        vec_dq.x *= 0.5 * delta_t;
+        vec_dq.y *= 0.5 * delta_t;
+        vec_dq.z *= 0.5 * delta_t;
+        vec_dq.w *= 0.5 * delta_t;
+
+        //  クォータニオンの更新
+        this.quaternion.x += vec_dq.x;
+        this.quaternion.y += vec_dq.y;
+        this.quaternion.z += vec_dq.z;
+        this.quaternion.w += vec_dq.w;
+        // this.quaternion.normalize();
+        this.quaternion = this.normalizeQuaternion(this.quaternion);
+
+   
+    // A=np.array([[q1[0]*q2[0]-q1[1]*q2[1]-q1[2]*q2[2]-q1[3]*q2[3]  ],
+    //             [q1[0]*q2[1]+q1[1]*q2[0]+q1[2]*q2[3]-q1[3]*q2[2]  ],
+    //             [q1[0]*q2[2]-q1[1]*q2[3]+q1[2]*q2[0]+q1[3]*q2[1]  ],
+    //             [q1[0]*q2[3]+q1[1]*q2[2]-q1[2]*q2[1]+q1[3]*q2[0]  ]])
+
+        // w =  aw*bw - ax*bx - ay*by - az*bz
+        // x =  aw*bx + ax*bw + ay*bz - az*by
+        // y =  aw*by - ax*bz + ay*bw + az*bx
+        // z =  aw*bz + ax*by - ay*bx + az*bw
+
+		// this._w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
+		// this._x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
+		// this._y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
+		// this._z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
+
+
+    }
+
+    exec_test(delta_t) {
         //  回転運動のトルクを求める
         let om = [[this.omega.x], [this.omega.y], [this.omega.z]];
         let tilde_omega = MB.tilde(om);

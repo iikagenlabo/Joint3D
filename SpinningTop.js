@@ -122,10 +122,15 @@ function init() {
   //  回転テスト
   // rigid_body.omega.z = 10;
   // rigid_body.omega.z = 20;
-  rigid_body.omega.x = 20;
-  rigid_body.omega.y = 100;
-  // rigid_body.quaternion.setFromEuler(new THREE.Euler(Math.PI/4, 0, 0));
+  // rigid_body.omega.x = 20;
+  // rigid_body.omega.y = 100;
+  // // rigid_body.quaternion.setFromEuler(new THREE.Euler(Math.PI/4, 0, 0));
 
+  //  パラメータを同じにしてみる
+  // rigid_body.omega.x = 0.01;
+  // rigid_body.omega.z = 10;
+  rigid_body.omega.x = 0.1;
+  rigid_body.omega.y = 10;
 }
 
 //------------------------------------------------------------------------------
@@ -164,8 +169,10 @@ function animate() {
     }
 
     //  剛体テスト
-    rigid_body.exec(DeltaT);
-    rigid_body.updatePosRot();
+    for(var lp1 = 0; lp1 < UpdateLoopCnt; lp1++) {
+      rigid_body.exec(DeltaT);
+      rigid_body.updatePosRot();
+    }
   }
 };
 
