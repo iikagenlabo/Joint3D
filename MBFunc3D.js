@@ -17,6 +17,8 @@ Matrix3.prototype.toMatrixArray = function(m) {
 //------------------------------------------------------------------------------
 var MBFunc3D = function() {
 
+  this.GRAVITY = 9.81;
+
   //  歪み対称マトリクスを求める(外積オペレータ).
   this.tilde = function(pos) {
     var x = pos[0][0];

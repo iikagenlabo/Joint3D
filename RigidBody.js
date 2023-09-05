@@ -15,6 +15,7 @@ class RigidBody {
         this.inertia = new THREE.Vector3(1, 1, 1);
 
         this.model = null;
+        this.gravity = false; //true;
 
         //  円柱用（仮）
         this.radius = 1;
@@ -95,7 +96,114 @@ class RigidBody {
         }
     }
 
+    updateRigidBody(param) {
+        let ret = [];
+        //  パラメータを展開
+        let position = new THREE.Vector3(param[0], param[1], param[2]);
+        let velocity = new THREE.Vector3(param[3], param[4], param[5]);
+        let quaternion = new THREE.Quaternion(param[6], param[7], param[8], param[9]);
+        let omega = new THREE.Vector3(param[10], param[11], param[12]);
+
+        //  クォータニオンを正規化
+        quaternion.normalize();
+
+        //  加速度
+        let accel = new THREE.Vector3();
+        if(this.gravity) {
+            accel.y -= this.mass * MB.GRAVITY;
+        }
+
+        //  角速度の外積オペレータ
+        let om = [[omega.x], [omega.y], [omega.z]];
+        let tilde_omega = MB.tilde(om);
+
+        //  角加速度の計算
+        let torque = math.multiply(tilde_omega, math.multiply(this.i_mtx, om))
+        torque = math.multiply(torque, -1);
+        let d_omega = math.multiply(this.inv_i, torque);
+
+        //  角速度からクォータニオンの時間微分を求める(dq = 1/2q*wv)
+        let vec_qw = new THREE.Quaternion(omega.x, omega.y, omega.z, 0);
+        let vec_dq = this.crossQuaternion(quaternion, vec_qw);
+        vec_dq.x *= 0.5;
+        vec_dq.y *= 0.5;
+        vec_dq.z *= 0.5;
+        vec_dq.w *= 0.5;
+
+        //  結果を配列に詰めて返す
+        //  速度、加速度、クォータニオンの時間微分、角加速度
+        ret[0] = velocity.x;
+        ret[1] = velocity.y;
+        ret[2] = velocity.z;
+        ret[3] = accel.x;
+        ret[4] = accel.y;
+        ret[5] = accel.z;
+        ret[6] = vec_dq.x;
+        ret[7] = vec_dq.y;
+        ret[8] = vec_dq.z;
+        ret[9] = vec_dq.w;
+        ret[10] = d_omega[0][0];
+        ret[11] = d_omega[1][0];
+        ret[12] = d_omega[2][0];
+
+        return ret;
+    }
+
+    calcNextParam(p, dp, dt) {
+        var n = [];
+    
+        //  要素の数でループ
+        for(var lp1 = 0; lp1 < p.length; lp1++) {
+            n[lp1] = p[lp1] + dp[lp1]*dt;
+        }
+    
+        return n;
+      }
+
+    //  パラメータを配列に詰める
+    setArrayFromParameter() {
+        let param = [];
+        param[0] = this.position.x;
+        param[1] = this.position.y;
+        param[2] = this.position.z;
+        param[3] = this.velocity.x;
+        param[4] = this.velocity.y;
+        param[5] = this.velocity.z;
+        param[6] = this.quaternion.x;
+        param[7] = this.quaternion.y;
+        param[8] = this.quaternion.z;
+        param[9] = this.quaternion.w;
+        param[10] = this.omega.x;
+        param[11] = this.omega.y;
+        param[12] = this.omega.z;
+
+        return param;
+    }      
+
+    unpackArrayToParameter(param) {
+        this.position.set(param[0], param[1], param[2]);
+        this.velocity.set(param[3], param[4], param[5]);
+        this.quaternion.set(param[6], param[7], param[8], param[9]);
+        this.omega.set(param[10], param[11], param[12]);
+    }
+
     exec(delta_t) {
+        let param = this.setArrayFromParameter();
+
+        // let ret = this.updateRigidBody(param);
+        // let np = this.calcNextParam(param, ret, delta_t);
+
+        //  thisを固定したメソッドを生成
+        const func = this.updateRigidBody.bind(this);
+
+        //  ルンゲ・クッタで次のフレームの位置を求める
+        let np = MB.RKSolve(func, param, delta_t);
+
+        //  計算結果を戻す
+        this.unpackArrayToParameter(np);
+    }
+
+    exec_normal(delta_t) {
         // let q = this.quaternion;
         // let w = this.omega;
         // console.log('Q:', q.w, q.x, q.y, q.z);
@@ -136,26 +244,8 @@ class RigidBody {
         this.quaternion.y += vec_dq.y;
         this.quaternion.z += vec_dq.z;
         this.quaternion.w += vec_dq.w;
-        // this.quaternion.normalize();
-        this.quaternion = this.normalizeQuaternion(this.quaternion);
-
-   
-    // A=np.array([[q1[0]*q2[0]-q1[1]*q2[1]-q1[2]*q2[2]-q1[3]*q2[3]  ],
-    //             [q1[0]*q2[1]+q1[1]*q2[0]+q1[2]*q2[3]-q1[3]*q2[2]  ],
-    //             [q1[0]*q2[2]-q1[1]*q2[3]+q1[2]*q2[0]+q1[3]*q2[1]  ],
-    //             [q1[0]*q2[3]+q1[1]*q2[2]-q1[2]*q2[1]+q1[3]*q2[0]  ]])
-
-        // w =  aw*bw - ax*bx - ay*by - az*bz
-        // x =  aw*bx + ax*bw + ay*bz - az*by
-        // y =  aw*by - ax*bz + ay*bw + az*bx
-        // z =  aw*bz + ax*by - ay*bx + az*bw
-
-		// this._w = qaw * qbw - qax * qbx - qay * qby - qaz * qbz;
-		// this._x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby;
-		// this._y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz;
-		// this._z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx;
-
-
+        this.quaternion.normalize();
+        // this.quaternion = this.normalizeQuaternion(this.quaternion);
     }
 
     exec_test(delta_t) {
