@@ -39,7 +39,7 @@ function init() {
 
   //  カメラの生成.
   camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 10000);
-  camera.position.set(0, 8, 15);        //  カメラ位置
+  camera.position.set(0, 4, 6);        //  カメラ位置
   scene.add(camera);
   camera.updateProjectionMatrix();
 
