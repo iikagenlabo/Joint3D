@@ -12,7 +12,11 @@ class RigidBody {
         this.quaternion = new THREE.Quaternion();
 
         this.mass = 1.0;
+        this.invMass;
         this.inertia = new THREE.Vector3(1, 1, 1);
+        this.invI;
+        this.i_mtx;
+        this.inv_i;
 
         this.model = null;
         this.gravity = false; //true;
@@ -23,6 +27,13 @@ class RigidBody {
     }
 
     preCalcParameter() {
+        this.invMass = 1/this.mass;
+        this.invI = [
+            1/this.inertia.x,
+            1/this.inertia.y,
+            1/this.inertia.z
+        ];
+
         this.i_mtx = [
             [this.inertia.x, 0, 0],
             [0, this.inertia.y, 0],
@@ -67,6 +78,7 @@ class RigidBody {
         // return base;
     }
 
+    //  クォータニオンの掛け算
     crossQuaternion(a, b) {
         let q = new THREE.Quaternion();
 
@@ -78,6 +90,7 @@ class RigidBody {
         return q;
     }
 
+    //  クォータニオンの正規化
     normalizeQuaternion(q) {
         let len = Math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
         if (len === 0) {

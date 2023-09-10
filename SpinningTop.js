@@ -48,9 +48,23 @@ class Spinner extends RigidBody {
 
     return base;
   }
-
 }
+//------------------------------------------------------------------------------
+//  剛体振り子
+class RigidPendulum extends RigidBody {
+  constructor() {
+    super();
+  }
 
+  preCalcParameter() {
+
+    super.preCalcParameter();
+  }
+
+  createModel() {
+    
+  }
+}
 
 (function () {
 
@@ -68,6 +82,10 @@ class Spinner extends RigidBody {
   var spotlight;
 
   var top_obj;          //  コマのオブジェクト.
+
+  //  0: スピナー
+  //  1: 剛体振り子
+  let mode = 0;
 
   //  キー入力
   var key_input = new KeyInput();
@@ -166,28 +184,27 @@ class Spinner extends RigidBody {
     // top_obj.addTopModel2();
     top_obj.initialize();
 
-    rigid_body = new Spinner(); //RigidBody();
-    scene.add(rigid_body.createModel());
-    rigid_body.preCalcParameter();
-    rigid_body.position.y = 2.0;
+    switch(mode) {
+    case 0:
+      //  テニスラケット効果を調べる物体
+      rigid_body = new Spinner();
+      scene.add(rigid_body.createModel());
+      rigid_body.preCalcParameter();
+      rigid_body.position.y = 2.0;
+      //  初速
+      rigid_body.omega.x = 0.1;
+      rigid_body.omega.y = 10;
+      //  表示位置更新
+      rigid_body.updatePosRot();
+      break;
 
-    //  速度を入れてみる
-    // rigid_body.velocity.y = 10;
-    //  回転テスト
-    // rigid_body.omega.z = 10;
-    // rigid_body.omega.z = 20;
-    // rigid_body.omega.x = 20;
-    // rigid_body.omega.y = 100;
-    // // rigid_body.quaternion.setFromEuler(new THREE.Euler(Math.PI/4, 0, 0));
+    case 1:
+      break;
 
-    //  パラメータを同じにしてみる
-    // rigid_body.omega.x = 0.01;
-    // rigid_body.omega.z = 10;
-    rigid_body.omega.x = 0.1;
-    rigid_body.omega.y = 10;
+    }
 
-    //  表示位置更新
-    rigid_body.updatePosRot();
+
+
   }
 
   //------------------------------------------------------------------------------
