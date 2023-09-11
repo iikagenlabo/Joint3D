@@ -54,6 +54,18 @@ class Spinner extends RigidBody {
 class RigidPendulum extends RigidBody {
   constructor() {
     super();
+
+    this.radius = 0.2;    //  半径
+    this.length = 1.0;    //  長さ
+
+    let Iy = this.mass * this.radius * this.radius * 0.5;
+    let Ixz = (this.radius * this.radius + this.length * this.length / 3) / 4 * this.mass;
+    this.inertia.x = Ixz;
+    this.inertia.y = Iy;
+    this.inertia.z = Ixz;
+
+    this.gravity = true;
+
   }
 
   preCalcParameter() {
@@ -61,8 +73,39 @@ class RigidPendulum extends RigidBody {
     super.preCalcParameter();
   }
 
-  createModel() {
-    
+  createModel(col) {
+    let material = new THREE.MeshPhongMaterial({
+      color: col,
+      shading: THREE.FlatShading
+    });
+
+    let base = new THREE.Object3D();
+
+    let len = 0.2;    //  円錐部分の長さ
+
+    //  円柱
+    let geom = new THREE.CylinderGeometry(this.radius, this.radius, this.length - len * 2, 8);
+    let cy0 = new THREE.Mesh(geom, material);
+    cy0.castShadow = true;
+    // cy0.receiveShadow = true;
+    base.add(cy0);
+
+    //  上の円錐
+    let geom1 = new THREE.CylinderGeometry(0, this.radius, len, 8);
+    let cy1 = new THREE.Mesh(geom1, material);
+    cy1.position.y = this.length / 2 - len / 2;
+    cy1.castShadow = true;
+    base.add(cy1);
+
+    //  下の円錐
+    let geom2 = new THREE.CylinderGeometry(this.radius, 0, len, 8);
+    let cy2 = new THREE.Mesh(geom2, material);
+    cy2.position.y = -this.length / 2 + len / 2;
+    cy2.castShadow = true;
+    base.add(cy2);
+
+    this.model = base;
+    return base;    
   }
 }
 
@@ -85,7 +128,7 @@ class RigidPendulum extends RigidBody {
 
   //  0: スピナー
   //  1: 剛体振り子
-  let mode = 0;
+  let mode = 1;
 
   //  キー入力
   var key_input = new KeyInput();
@@ -102,6 +145,7 @@ class RigidPendulum extends RigidBody {
   var UpdateLoopCnt = 10;
 
   var rigid_body;
+  let rod;
 
   //------------------------------------------------------------------------------
   //  初期化処理.
@@ -199,6 +243,11 @@ class RigidPendulum extends RigidBody {
       break;
 
     case 1:
+      rod = new RigidPendulum();
+      scene.add(rod.createModel(0x4040ff));
+      rod.preCalcParameter();
+      rod.position.y = 2.0;
+      rod.updatePosRot();
       break;
 
     }
@@ -244,8 +293,10 @@ class RigidPendulum extends RigidBody {
 
       //  剛体テスト
       for (var lp1 = 0; lp1 < UpdateLoopCnt; lp1++) {
-        rigid_body.exec(DeltaT);
-        rigid_body.updatePosRot();
+        // rigid_body.exec(DeltaT);
+        // rigid_body.updatePosRot();
+        rod.exec(DeltaT);
+        rod.updatePosRot();
       }
     }
   };
