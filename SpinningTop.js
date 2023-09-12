@@ -146,6 +146,7 @@ class RigidPendulum extends RigidBody {
 
   var rigid_body;
   let rod;
+  let joint;
 
   //------------------------------------------------------------------------------
   //  初期化処理.
@@ -248,8 +249,9 @@ class RigidPendulum extends RigidBody {
       rod.preCalcParameter();
       rod.position.y = 2.0;
       rod.updatePosRot();
+ 
+      joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 4.0, 0));
       break;
-
     }
 
 
