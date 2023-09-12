@@ -105,7 +105,7 @@ class RigidPendulum extends RigidBody {
     base.add(cy2);
 
     this.model = base;
-    return base;    
+    return base;
   }
 }
 
@@ -229,29 +229,29 @@ class RigidPendulum extends RigidBody {
     // top_obj.addTopModel2();
     top_obj.initialize();
 
-    switch(mode) {
-    case 0:
-      //  テニスラケット効果を調べる物体
-      rigid_body = new Spinner();
-      scene.add(rigid_body.createModel());
-      rigid_body.preCalcParameter();
-      rigid_body.position.y = 2.0;
-      //  初速
-      rigid_body.omega.x = 0.1;
-      rigid_body.omega.y = 10;
-      //  表示位置更新
-      rigid_body.updatePosRot();
-      break;
+    switch (mode) {
+      case 0:
+        //  テニスラケット効果を調べる物体
+        rigid_body = new Spinner();
+        scene.add(rigid_body.createModel());
+        rigid_body.preCalcParameter();
+        rigid_body.position.y = 2.0;
+        //  初速
+        rigid_body.omega.x = 0.1;
+        rigid_body.omega.y = 10;
+        //  表示位置更新
+        rigid_body.updatePosRot();
+        break;
 
-    case 1:
-      rod = new RigidPendulum();
-      scene.add(rod.createModel(0x4040ff));
-      rod.preCalcParameter();
-      rod.position.y = 2.0;
-      rod.updatePosRot();
- 
-      joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 4.0, 0));
-      break;
+      case 1:
+        rod = new RigidPendulum();
+        scene.add(rod.createModel(0x4040ff));
+        rod.preCalcParameter();
+        rod.position.y = 2.0;
+        rod.updatePosRot();
+
+        joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 4.0, 0));
+        break;
     }
 
 
@@ -295,10 +295,25 @@ class RigidPendulum extends RigidBody {
 
       //  剛体テスト
       for (var lp1 = 0; lp1 < UpdateLoopCnt; lp1++) {
-        // rigid_body.exec(DeltaT);
-        // rigid_body.updatePosRot();
-        rod.exec(DeltaT);
-        rod.updatePosRot();
+        switch (mode) {
+          case 0:
+            rigid_body.exec(DeltaT);
+            rigid_body.updatePosRot();
+            break;
+
+          case 1:
+            //  ジョイントの計算
+            joint.preCalc(DeltaT);
+            //  拘束力の計算
+            joint.calcConstraint(DeltaT);
+            //  拘束力を剛体にかけて速度を更新する
+            joint.applyConstraintForce();
+
+
+            rod.exec(DeltaT);
+            rod.updatePosRot();
+            break;
+        }
       }
     }
   };

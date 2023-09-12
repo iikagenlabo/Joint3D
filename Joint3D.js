@@ -33,8 +33,8 @@ class Joint3D
         this.wp_b = new THREE.Vector3(this.lp_b.x, this.lp_b.y, this.lp_b.z);
         let invMa = 0;
         let invMb = 0;
-        let invIa;
-        let invIb;
+        let invIa = [0, 0, 0];
+        let invIb = [0, 0, 0];
 
         if(this.body_a != null)
         {
@@ -54,8 +54,8 @@ class Joint3D
             [ invMa, 0, 0, 0, 0, 0,    0, 0, 0, 0, 0, 0 ],
             [ 0, invMa, 0, 0, 0, 0,    0, 0, 0, 0, 0, 0 ],
             [ 0, 0, invMa, 0, 0, 0,    0, 0, 0, 0, 0, 0 ],
-            [ 0, 0, 0, invIa[0], 0,    0, 0, 0, 0, 0, 0 ],
-            [ 0, 0, 0, 0, invIa[1],    0, 0, 0, 0, 0, 0 ],
+            [ 0, 0, 0, invIa[0], 0, 0, 0, 0, 0, 0, 0, 0 ],
+            [ 0, 0, 0, 0, invIa[1], 0, 0, 0, 0, 0, 0, 0 ],
             [ 0, 0, 0, 0, 0, invIa[2], 0, 0, 0, 0, 0, 0 ],
             [ 0, 0, 0, 0, 0, 0,        invMb, 0, 0, 0, 0, 0 ],
             [ 0, 0, 0, 0, 0, 0,        0, invMb, 0, 0, 0, 0 ],
@@ -78,10 +78,10 @@ class RevoluteJoint extends Joint3D
         this.J = [
             [ 1, 0, 0, 0, 0, 0,  -1, 0, 0, 0, 0, 0 ],
             [ 0, 1, 0, 0, 0, 0,  0, -1, 0, 0, 0, 0 ],
-            [ 0, 0, 1, 0, 0, 0,  0, 0, -1, 0, 0, 0 ],
+            [ 0, 0, 1, 0, 0, 0,  0, 0, -1, 0, 0, 0 ]
         ];
         //  回転拘束部分
-        let ra = MB.tilde([[lp_a.x], [lp_a.y], [lp_a.z]]);
+        let ra = MB.tilde([[this.lp_a.x], [this.lp_a.y], [this.lp_a.z]]);
         if(this.body_a != null)
         {
             let lw_a = MB.QuatToMtx(this.body_a.quaternion.toArray());
@@ -89,7 +89,7 @@ class RevoluteJoint extends Joint3D
             MB.copyArray(this.J, 3, 0, Ja, 3, 3);
         }
 
-        let rb = MB.tilde([[lp_b.x], [lp_b.y], [lp_b.z]]);
+        let rb = MB.tilde([[this.lp_b.x], [this.lp_b.y], [this.lp_b.z]]);
         if(this.body_b != null)
         {
             let lw_b = MB.QuatToMtx(this.body_b.quaternion.toArray());
