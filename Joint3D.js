@@ -1,4 +1,4 @@
-class Joint3D 
+class Joint3D
 {
     constructor(body_a, lp_a, body_b, lp_b)
     {
@@ -22,8 +22,8 @@ class Joint3D
         this.constraintForce = new THREE.Vector3();
 
         //  拘束補正値
-        this.p_err = new THREE.Vector3();
-        this.v_err = new THREE.Vector3();
+        this.p_err = new THREE.Vector3();   //  位置差分
+        this.v_err = new THREE.Vector3();   //  速度差分
     }
 
     //  事前計算
@@ -65,6 +65,49 @@ class Joint3D
             [ 0, 0, 0, 0, 0, 0,        0, 0, 0, 0, 0, invIb[2] ]
         ];
     }
+
+    //  拘束力の計算
+    calcConstraint(delta_t) {
+		//  Amtx = [J][M-1][JT] は Joint3D で作る
+		let Amtx = this.Amtx;
+
+    }
+
+    //  剛体に拘束力を掛ける
+    applyConstraintForce()
+    {
+        if(this.body_a != null)
+        {
+            this.body_a.applyImpulse(this.constraintForce, this.wp_a);
+        }
+        if(this.body_b != null)
+        {
+            let cf = new THREE.Vector3();
+            cf.copy(this.constraintForce);
+            cf.scale(-1);
+            this.body_b.applyImpulse(cf, this.wp_b);
+        }
+    }
+
+    //  ジョイント位置のワールド座標
+    getWorldPosition(body_num)
+    {
+        let wpos = new THREE.Vector3();
+        if((body_num == 0 || body_num == null) && this.body_a != null)
+        {
+            wpos.set(this.wp_a);
+            wpos.add(this.body_a.position);
+            return wpos;
+        }
+        if((body_num == 1) && this.body_b != null)
+        {
+            wpos.set(this.wp_b);
+            wpos.add(this.body_b.position);
+            return wpos;
+        }
+
+        return wpos;
+    }
 }
 
 
@@ -101,6 +144,20 @@ class RevoluteJoint extends Joint3D
 
         // Amtxの作成
         this.Amtx = math.multiply(math.multiply(this.J, this.invM), this.JT);
+
+        //  ジョイントの位置のずれを求める
+        let wpos_a = this.getWorldPosition(0);
+        let wpos_b = this.getWorldPosition(1);
+
+        this.p_err.copy(wpos_a);
+        this.p_err.sub(wpos_b);
+        //  エラー補正係数を掛ける
+        this.p_err.multiplyScalar(-0.2 / delta_t);
+
+        //  ジョイント位置の速度の補正
+
+
+
 
         //  ヤコビアン
         // //  ここでの回転部分の拘束式はワールド座標系になる

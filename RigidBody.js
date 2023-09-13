@@ -5,10 +5,10 @@ class RigidBody {
     constructor() {
         this.position = new THREE.Vector3();
         this.velocity = new THREE.Vector3();
-        this.accel = [0, 0, 0];
+        this.accel = new THREE.Vector3();   //[0, 0, 0];
         this.rot = [0, 0, 0];
         this.omega = new THREE.Vector3();
-        this.d_omega = [0, 0, 0];
+        this.d_omega = new THREE.Vector3(); //[0, 0, 0];
         this.quaternion = new THREE.Quaternion();
 
         this.mass = 1.0;
@@ -46,6 +46,7 @@ class RigidBody {
         ];
     }
 
+    //  表示モデルの生成
     createModel() {
         // //  仮の円柱モデル
         // var material = new THREE.MeshPhongMaterial({
@@ -76,6 +77,17 @@ class RigidBody {
         // this.model = base;
 
         // return base;
+    }
+
+    //  剛体に力をかける
+    applyImpulse(force, w_pos) {
+        //  並進加速度
+        this.accel.add(force);
+        //  ワールド座標系でのベクトルと外積を取ってトルクを求める
+        let torque = new THREE.Vector3();
+        torque.crossVectors(w_pos, force);
+        //  角加速度を更新
+        this.d_omega.sub(torque);
     }
 
     //  クォータニオンの掛け算
@@ -156,12 +168,12 @@ class RigidBody {
 
     calcNextParam(p, dp, dt) {
         var n = [];
-    
+
         //  要素の数でループ
         for(var lp1 = 0; lp1 < p.length; lp1++) {
             n[lp1] = p[lp1] + dp[lp1]*dt;
         }
-    
+
         return n;
       }
 
@@ -183,7 +195,7 @@ class RigidBody {
         param[12] = this.omega.z;
 
         return param;
-    }      
+    }
 
     unpackArrayToParameter(param) {
         this.position.set(param[0], param[1], param[2]);
@@ -411,7 +423,7 @@ class RigidBody {
     }
 }
 
-
+//  いらないところを整理しないといけないな
 
 //  https://qiita.com/GANTZ/items/8a9d52c91cce902b44c9
 
