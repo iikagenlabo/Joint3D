@@ -1,5 +1,7 @@
 class Joint3D
 {
+    static Gravity = 9.81;
+
     constructor(body_a, lp_a, body_b, lp_b)
     {
         //  剛体の番号
@@ -67,10 +69,128 @@ class Joint3D
     }
 
     //  拘束力の計算
+    //  外力を加えて方程式の右辺を作って、連立方程式を解いて拘束力を求める
     calcConstraint(delta_t) {
 		//  Amtx = [J][M-1][JT] は Joint3D で作る
 		let Amtx = this.Amtx;
 
+        //  エラー補正用の差分
+        let err = this.p_err.clone();
+
+        //  速度
+        let u = [[0], [0], [0], [0], [0], [0],
+                 [0], [0], [0], [0], [0], [0]];
+        if(this.body_a != null)
+        {
+            let vel = this.body_a.velocity.clone();
+            vel.sub(err);
+            u[0] = [vel.x];
+            u[1] = [vel.y];
+            u[2] = [vel.z];
+            u[3] = [this.body_a.omega.x];
+            u[4] = [this.body_a.omega.y];
+            u[5] = [this.body_a.omega.z];
+        }
+        if(this.body_b != null)
+        {
+            let vel = this.body_b.velocity.clone();
+            vel.add(err);
+            u[0] = [vel.x];
+            u[1] = [vel.y];
+            u[2] = [vel.z];
+            u[3] = [this.body_b.omega.x];
+            u[4] = [this.body_b.omega.y];
+            u[5] = [this.body_b.omega.z];
+        }
+
+        //  外力
+        let F = [[0], [0], [0], [0], [0], [0],
+                 [0], [0], [0], [0], [0], [0]];
+        if(this.body_a != null)
+        {
+            F[1] = [-this.body_a.mass * Joint3D.Gravity];   //  重力
+            //  コリオリ力
+            let torque = this.body_a.calcCoriolisForce(this.body_a.omega);
+            F[3] = torque[0];
+            F[4] = torque[1];
+            F[5] = torque[2];
+        }
+        if(this.body_b != null)
+        {
+            F[8] = [-this.body_b.mass * Joint3D.Gravity];   //  重力
+            //  コリオリ力
+            let torque = this.body_b.calcCoriolisForce(this.body_b.omega);
+            F[9] = torque[0];
+            F[10] = torque[1];
+            F[11] = torque[2];
+        }
+
+		//  Bvec = J(u + [M-1][F]*dt) [3*1]
+        let Bvec = math.multiply(this.invM, F);
+		// Bvec = math.dotMultiply(Bvec, delta_t);
+		Bvec = math.add(Bvec, u);
+		Bvec = math.multiply(this.J, Bvec);
+
+		let impulse = [0, 0, 0];
+
+		//  連立方程式を解く A[3*3]I[3*1] = B[3*1]
+		GaussSeidel(Amtx, Bvec, impulse);
+
+        this.constraintForce.set(impulse[0], impulse[1], impulse[2]);
+
+        return impulse;
+
+        // //  エラー補正
+		// let err = this.p_err;
+		// err.add(this.v_err);
+
+		// //  速度
+		// var u = [[0],[0],[0], [0],[0],[0]];
+        // if(this.body_a != null)
+        // {
+        //     u[0] = [this.body_a.velocity.x - err.x];
+        //     u[1] = [this.body_a.velocity.y - err.y];
+        //     u[2] = [this.body_a.omega];
+        // }
+        // if(this.body_b != null)
+        // {
+        //     u[3] = [this.body_b.velocity.x + err.x];
+        //     u[4] = [this.body_b.velocity.y + err.y];
+        //     u[5] = [this.body_b.omega];
+        // }
+
+        // //  外力
+		// var F = [[0], [0], [0],
+		//          [0], [0], [0]];
+        // if(this.body_a != null)
+        // {
+        //     F[1] = [-this.body_a.mass * Joint2D.Gravity];
+        // }
+        // if(this.body_b != null)
+        // {
+        //     F[4] = [-this.body_b.mass * Joint2D.Gravity];
+        // }
+
+        // //  debug
+        // // for(let i = 0; i < 6; i++) {
+        // //     console.log(i, u[i], F[i]);
+        // // }
+
+		// //  Bvec = J(u + [M-1][F]*dt)
+		// // var Bvec = math.multiply(Minv, F);
+		// var Bvec = math.multiply(this.invM, F);
+		// Bvec = math.dotMultiply(Bvec, delta_t);
+		// Bvec = math.add(Bvec, u);
+		// Bvec = math.multiply(this.J, Bvec);
+
+		// let impulse = [0, 0];
+
+		// //  連立方程式を解く
+		// GaussSeidel(Amtx, Bvec, impulse);
+
+        // this.constraintForce.set(impulse[0], impulse[1]);
+
+        // return impulse;
     }
 
     //  剛体に拘束力を掛ける
@@ -78,14 +198,13 @@ class Joint3D
     {
         if(this.body_a != null)
         {
-            this.body_a.applyImpulse(this.constraintForce, this.wp_a);
+            let cf = this.constraintForce.clone();
+            cf.multiplyScalar(-1);
+            this.body_a.applyImpulse(cf, this.wp_a);
         }
         if(this.body_b != null)
         {
-            let cf = new THREE.Vector3();
-            cf.copy(this.constraintForce);
-            cf.scale(-1);
-            this.body_b.applyImpulse(cf, this.wp_b);
+            this.body_b.applyImpulse(this.constraintForce, this.wp_b);
         }
     }
 

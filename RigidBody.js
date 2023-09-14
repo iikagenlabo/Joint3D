@@ -46,6 +46,13 @@ class RigidBody {
         ];
     }
 
+    //  ループ実行前の処理
+    preExec() {
+        //  加速度をクリアする
+        this.accel.set(0, 0, 0);
+        this.d_omega.set(0, 0, 0);
+    }
+
     //  表示モデルの生成
     createModel() {
         // //  仮の円柱モデル
@@ -102,6 +109,20 @@ class RigidBody {
         return q;
     }
 
+    //  コリオリ力を求める
+    calcCoriolisForce(omega) {
+        //  角速度の外積オペレータ
+        let om = [[omega.x], [omega.y], [omega.z]];
+        let tilde_omega = MB.tilde(om);
+
+        //  角加速度の計算
+        //  コリオリ力(-tw * J * w)
+        let torque = math.multiply(tilde_omega, math.multiply(this.i_mtx, om))
+        torque = math.multiply(torque, -1);
+
+        return torque;  //  [[x], [y], [z]]
+    }
+
     //  クォータニオンの正規化
     normalizeQuaternion(q) {
         let len = Math.sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w);
@@ -125,19 +146,34 @@ class RigidBody {
         quaternion.normalize();
 
         //  加速度
-        let accel = new THREE.Vector3();
+        let accel = this.accel.clone();
         if(this.gravity) {
-            accel.y -= this.mass * MB.GRAVITY;
+            //  重力をローカル座標系に変換して足す
+            let lg = new THREE.Vector3(0, -this.mass * MB.GRAVITY, 0);
+            let wlq = this.quaternion.clone();
+            wlq.inverse();
+            lg.applyQuaternion(wlq);
+    
+            // accel.y -= this.mass * MB.GRAVITY;
+            accel.add(lg);
         }
 
         //  角速度の外積オペレータ
-        let om = [[omega.x], [omega.y], [omega.z]];
-        let tilde_omega = MB.tilde(om);
+        // let om = [[omega.x], [omega.y], [omega.z]];
+        // let tilde_omega = MB.tilde(om);
 
-        //  角加速度の計算
-        let torque = math.multiply(tilde_omega, math.multiply(this.i_mtx, om))
-        torque = math.multiply(torque, -1);
-        let d_omega = math.multiply(this.inv_i, torque);
+        // //  角加速度の計算
+        // //  コリオリ力(-tw * J * w)
+        // let torque = math.multiply(tilde_omega, math.multiply(this.i_mtx, om))
+        // torque = math.multiply(torque, -1);
+        // let d_omega = math.multiply(this.inv_i, torque);
+
+        //  コリオリ力によるトルク
+        let torque = this.calcCoriolisForce(omega);
+        let d_omega = math.multiply(this.inv_i, torque);    //  慣性モーメントで割って角加速度にする
+        d_omega[0][0] += this.d_omega.x;
+        d_omega[1][0] += this.d_omega.y;
+        d_omega[2][0] += this.d_omega.z;
 
         //  角速度からクォータニオンの時間微分を求める(dq = 1/2q*wv)
         let vec_qw = new THREE.Quaternion(omega.x, omega.y, omega.z, 0);

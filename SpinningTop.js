@@ -244,13 +244,25 @@ class RigidPendulum extends RigidBody {
         break;
 
       case 1:
+        //  剛体振り子
         rod = new RigidPendulum();
         scene.add(rod.createModel(0x4040ff));
         rod.preCalcParameter();
-        rod.position.y = 2.0;
+
+        //  初期位置
+        rod.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 5);
+        //  重心位置から見た支点位置をクォータニオンで回転させて、
+        //  支点の初期位置から引くと重心の初期位置になる
+        var rap = new THREE.Vector3(0, -0.5, 0);
+        rap.applyQuaternion(rod.quaternion);
+        rod.position.copy(rap);
+        rod.position.y += 2.0;
+
+        // rod.position.y = 2.0;
+        // rod.omega.y = 1.0;
         rod.updatePosRot();
 
-        joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 4.0, 0));
+        joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 2.0, 0));
         break;
     }
 
@@ -302,13 +314,15 @@ class RigidPendulum extends RigidBody {
             break;
 
           case 1:
+            //  計算実行前の処理
+            rod.preExec();
+
             //  ジョイントの計算
             joint.preCalc(DeltaT);
             //  拘束力の計算
             joint.calcConstraint(DeltaT);
             //  拘束力を剛体にかけて速度を更新する
             joint.applyConstraintForce();
-
 
             rod.exec(DeltaT);
             rod.updatePosRot();
