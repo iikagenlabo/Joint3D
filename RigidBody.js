@@ -149,13 +149,13 @@ class RigidBody {
         let accel = this.accel.clone();
         if(this.gravity) {
             //  重力をローカル座標系に変換して足す
-            let lg = new THREE.Vector3(0, -this.mass * MB.GRAVITY, 0);
-            let wlq = this.quaternion.clone();
-            wlq.inverse();
-            lg.applyQuaternion(wlq);
-    
-            // accel.y -= this.mass * MB.GRAVITY;
-            accel.add(lg);
+            // let lg = new THREE.Vector3(0, -this.mass * MB.GRAVITY, 0);
+            // let wlq = this.quaternion.clone();
+            // wlq.inverse();
+            // lg.applyQuaternion(wlq);
+            // accel.add(lg);
+
+            accel.y -= this.mass * MB.GRAVITY;
         }
 
         //  角速度の外積オペレータ

@@ -148,6 +148,8 @@ class RigidPendulum extends RigidBody {
   let rod;
   let joint;
 
+  let arrow0;
+
   //------------------------------------------------------------------------------
   //  初期化処理.
   function init() {
@@ -262,14 +264,47 @@ class RigidPendulum extends RigidBody {
         // rod.omega.y = 1.0;
         rod.updatePosRot();
 
-        joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 2.0, 0));
+        joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 0, 0));
+
+        initArrow();
         break;
     }
 
 
 
   }
+  //------------------------------------------------------------------------------
+  //  矢印
+  function initArrow() {
+    var from = new THREE.Vector3(2, 2, 2);
+    var to = new THREE.Vector3(0, 0, 0);
+    var direction = to.clone().sub(from);
+    var length = direction.length();
+    arrow0 = new THREE.ArrowHelper(direction.normalize(), from, length, 0xff0000);
+    scene.add(arrow0);
 
+    // arrow1 = new THREE.ArrowHelper(direction.normalize(), from, length, 0x0000ff);
+    // scene.add(arrow1);
+  }
+
+  function setArrow() {
+    // let b0 = BodyArray[0];
+    // let b1 = BodyArray[1];
+    let j0 = joint; //JointArray[2];
+
+    var from = j0.wp_a.clone();
+    from.add(j0.body_a.position);
+    var to = j0.constraintForce.clone();
+    to.multiplyScalar(-0.1);
+    to.add(j0.body_a.position);
+
+    var direction = to.clone().sub(from);
+    var length = direction.length();
+
+    arrow0.position.copy(from);
+    arrow0.setLength(length);
+    arrow0.setDirection(direction.normalize());
+  }
   //------------------------------------------------------------------------------
   //  ループ実行部分.
   function animate() {
@@ -326,6 +361,8 @@ class RigidPendulum extends RigidBody {
 
             rod.exec(DeltaT);
             rod.updatePosRot();
+
+            setArrow();
             break;
         }
       }
