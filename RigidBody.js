@@ -94,7 +94,16 @@ class RigidBody {
         let torque = new THREE.Vector3();
         torque.crossVectors(w_pos, force);
         //  角加速度を更新
-        this.d_omega.sub(torque);
+        this.d_omega.add(torque);
+    }
+
+    //  ローカルの点のワールド座標での速度を求める
+    getLocalPointVelocity(l_pos) {
+		var p_vel = this.omega.clone();
+        p_vel.cross(l_pos);
+        p_vel.add(this.velocity);
+
+        return p_vel;
     }
 
     //  クォータニオンの掛け算
