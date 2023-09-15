@@ -130,11 +130,13 @@ class Joint3D
 		// Bvec = math.dotMultiply(Bvec, delta_t);
 		Bvec = math.add(Bvec, u);
 		Bvec = math.multiply(this.J, Bvec);
+        //  普通の配列に変換
+        let Barr = [Bvec[0][0], Bvec[1][0], Bvec[2][0]];
 
 		let impulse = [0, 0, 0];
 
 		//  連立方程式を解く A[3*3]I[3*1] = B[3*1]
-		GaussSeidel(Amtx, Bvec, impulse);
+		GaussSeidel(Amtx, Barr, impulse);
 
         this.constraintForce.set(impulse[0], impulse[1], impulse[2]);
 

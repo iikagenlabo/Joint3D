@@ -3,12 +3,15 @@
 function checkError(e) {
 	const ERROR_VAL = 1.0e-10;
 
+	var err = 0;
 	for (var i = 0; i < e.length; i++) {
-		//  値が収束したら反復終了
-		if (e[i] <= ERROR_VAL) {
-			return false;
-		}
+		err += Math.abs(e[i]);
 	}
+	//  値が収束したら反復終了
+	if (err <= ERROR_VAL) {
+		return false;
+	}
+
 	return true;
 }
 
