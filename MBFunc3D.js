@@ -137,15 +137,28 @@ var MBFunc3D = function() {
 
   //  クォータニオンからマトリクスへ変換
   this.QuatToMtx = function(q) {
-    var x = q[0], y = q[1], z = q[2], w = q[3];
+    // var x = q[0], y = q[1], z = q[2], w = q[3];
 
-    var mtx = [
-      [ y*y - z*z - w*w + x*x, 2.0*(y*z - w*x),       2.0*(w*y + x*z) ],
-      [ 2.0*(y*z + w*x),       z*z - w*w - y*y + x*x, 2.0*(z*w - y*x) ],
-      [ 2.0*(w*y - z*x),       2.0*(z*w + y*x),       w*w - y*y - z*z + x*x ],
+    // var mtx = [
+    //   [ y*y - z*z - w*w + x*x, 2.0*(y*z - w*x),       2.0*(w*y + x*z) ],
+    //   [ 2.0*(y*z + w*x),       z*z - w*w - y*y + x*x, 2.0*(z*w - y*x) ],
+    //   [ 2.0*(w*y - z*x),       2.0*(z*w + y*x),       w*w - y*y - z*z + x*x ],
+    // ];
+
+    // return mtx;
+
+    var E1 = q[3];
+    var E2 = q[0];
+    var E3 = q[1];
+    var E4 = q[2];
+
+    var c = [
+      [ E2*E2-E3*E3-E4*E4+E1*E1, (E2*E3-E4*E1)*2,          (E4*E2+E3*E1)*2 ],
+      [(E2*E3+E4*E1)*2,           E3*E3-E4*E4-E2*E2+E1*E1, (E3*E4-E2*E1)*2 ],
+      [(E4*E2-E3*E1)*2,          (E3*E4+E2*E1)*2,           E4*E4-E2*E2-E3*E3+E1*E1 ]
     ];
 
-    return mtx;
+    return c;
   };
 
   //	２次元配列の生成.

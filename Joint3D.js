@@ -139,58 +139,6 @@ class Joint3D
         this.constraintForce.set(impulse[0], impulse[1], impulse[2]);
 
         return impulse;
-
-        // //  エラー補正
-		// let err = this.p_err;
-		// err.add(this.v_err);
-
-		// //  速度
-		// var u = [[0],[0],[0], [0],[0],[0]];
-        // if(this.body_a != null)
-        // {
-        //     u[0] = [this.body_a.velocity.x - err.x];
-        //     u[1] = [this.body_a.velocity.y - err.y];
-        //     u[2] = [this.body_a.omega];
-        // }
-        // if(this.body_b != null)
-        // {
-        //     u[3] = [this.body_b.velocity.x + err.x];
-        //     u[4] = [this.body_b.velocity.y + err.y];
-        //     u[5] = [this.body_b.omega];
-        // }
-
-        // //  外力
-		// var F = [[0], [0], [0],
-		//          [0], [0], [0]];
-        // if(this.body_a != null)
-        // {
-        //     F[1] = [-this.body_a.mass * Joint2D.Gravity];
-        // }
-        // if(this.body_b != null)
-        // {
-        //     F[4] = [-this.body_b.mass * Joint2D.Gravity];
-        // }
-
-        // //  debug
-        // // for(let i = 0; i < 6; i++) {
-        // //     console.log(i, u[i], F[i]);
-        // // }
-
-		// //  Bvec = J(u + [M-1][F]*dt)
-		// // var Bvec = math.multiply(Minv, F);
-		// var Bvec = math.multiply(this.invM, F);
-		// Bvec = math.dotMultiply(Bvec, delta_t);
-		// Bvec = math.add(Bvec, u);
-		// Bvec = math.multiply(this.J, Bvec);
-
-		// let impulse = [0, 0];
-
-		// //  連立方程式を解く
-		// GaussSeidel(Amtx, Bvec, impulse);
-
-        // this.constraintForce.set(impulse[0], impulse[1]);
-
-        // return impulse;
     }
 
     //  剛体に拘束力を掛ける
@@ -255,7 +203,7 @@ class RevoluteJoint extends Joint3D
         if(this.body_b != null)
         {
             let lw_b = MB.QuatToMtx(this.body_b.quaternion.toArray());
-            let Jb = math.multiply(math.multiply(lw_b, rb), -1);
+            let Jb = math.multiply(lw_b, rb);
             MB.copyArray(this.J, 9, 0, Jb, 3, 3);
         }
 
