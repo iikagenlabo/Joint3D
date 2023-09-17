@@ -76,6 +76,7 @@ class Joint3D
 
         //  エラー補正用の差分
         let err = this.p_err.clone();
+        // err.add(this.v_err);
 
         //  速度
         let u = [[0], [0], [0], [0], [0], [0],
@@ -84,9 +85,9 @@ class Joint3D
         {
             let vel = this.body_a.velocity.clone();
             vel.sub(err);
-            u[0] = [vel.x];
-            u[1] = [vel.y];
-            u[2] = [vel.z];
+            u[0] = [vel.x - err.x];
+            u[1] = [vel.y - err.y];
+            u[2] = [vel.z - err.z];
             u[3] = [this.body_a.omega.x];
             u[4] = [this.body_a.omega.y];
             u[5] = [this.body_a.omega.z];
@@ -95,9 +96,9 @@ class Joint3D
         {
             let vel = this.body_b.velocity.clone();
             vel.add(err);
-            u[0] = [vel.x];
-            u[1] = [vel.y];
-            u[2] = [vel.z];
+            u[0] = [vel.x + err.x];
+            u[1] = [vel.y + err.y];
+            u[2] = [vel.z + err.z];
             u[3] = [this.body_b.omega.x];
             u[4] = [this.body_b.omega.y];
             u[5] = [this.body_b.omega.z];
@@ -125,10 +126,13 @@ class Joint3D
             F[11] = torque[2];
         }
 
-		//  Bvec = J(u + [M-1][F]*dt) [3*1]
+        //  加速度にdtを掛けないので、速度をdtで割って単位をそろえる
+        u = math.multiply(u, 1/delta_t);
+
+        //  Bvec = J(u + [M-1][F]*dt) [3*1]
         let Bvec = math.multiply(this.invM, F);
 		// Bvec = math.dotMultiply(Bvec, delta_t);
-		Bvec = math.add(Bvec, u);
+        Bvec = math.add(Bvec, u);
 		Bvec = math.multiply(this.J, Bvec);
         //  普通の配列に変換
         let Barr = [Bvec[0][0], Bvec[1][0], Bvec[2][0]];
@@ -224,44 +228,19 @@ class RevoluteJoint extends Joint3D
         this.p_err.multiplyScalar(-0.2 / delta_t);
 
         //  ジョイント位置の速度の補正
-
-
-
-
-        //  ヤコビアン
-        // //  ここでの回転部分の拘束式はワールド座標系になる
-		// this.J = [
-		// 	[ 1, 0, -this.wp_a.y, -1,  0,  this.wp_b.y],
-		// 	[ 0, 1,  this.wp_a.x,  0, -1, -this.wp_b.x]
-		// ];
-
-		// this.JT = math.transpose(this.J);
-
-        // // Amtxの作成
-        // this.Amtx = math.multiply(math.multiply(this.J, this.invM), this.JT);
-
-        // //  ジョイントの位置のずれを求める
-        // let wpos_a = this.getWorldPosition(0);
-        // let wpos_b = this.getWorldPosition(1);
-        // this.p_err.set(wpos_a);
-        // this.p_err.sub(wpos_b);
-
-        // //  エラー補正係数を掛ける
-        // this.p_err.scale(-0.2 / delta_t);
-
-        // //  ジョイント位置の速度の補正
-        // let wvel_a = new Vector2();
-        // let wvel_b = new Vector2();
-        // if(this.body_a != null)
-        // {
-        //     wvel_a.set(this.body_a.getLocalPointVelocity(this.lp_a));
-        // }
-        // if(this.body_b != null)
-        // {
-        //     wvel_b.set(this.body_b.getLocalPointVelocity(this.lp_b));
-        // }
-        // this.v_err.set(wvel_a);
-        // this.v_err.sub(wvel_b);
-        // this.v_err.scale(0.3);          //  ここの係数を入れないと安定しない
+        let wvel_a = new THREE.Vector3();
+        let wvel_b = new THREE.Vector3();
+        if(this.body_a != null)
+        {
+            wvel_a.copy(this.body_a.getLocalPointVelocity(this.lp_a));
+        }
+        if(this.body_b != null)
+        {
+            wvel_b.copy(this.body_b.getLocalPointVelocity(this.lp_b));
+        }
+        this.v_err.copy(wvel_a);
+        this.v_err.sub(wvel_b);
+        this.v_err.multiplyScalar(0.3);          //  ここの係数を入れないと安定しない
+        //  速度補正はいらないかも？
     }
 }
