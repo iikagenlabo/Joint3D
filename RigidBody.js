@@ -89,10 +89,15 @@ class RigidBody {
     //  剛体に力をかける
     applyImpulse(force, w_pos) {
         //  並進加速度
-        this.accel.add(force);
+        let accel = force.clone();
+        accel.multiplyScalar(this.invMass);
+        this.accel.add(accel /*force*/);
         //  ワールド座標系でのベクトルと外積を取ってトルクを求める
         let torque = new THREE.Vector3();
         torque.crossVectors(w_pos, force);
+        torque.x *= this.invI[0];
+        torque.y *= this.invI[1];
+        torque.z *= this.invI[2];
         //  角加速度を更新
         this.d_omega.add(torque);
     }
