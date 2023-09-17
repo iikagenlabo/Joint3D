@@ -87,14 +87,20 @@ class RigidBody {
     }
 
     //  剛体に力をかける
-    applyImpulse(force, w_pos) {
+    applyImpulse(force, l_pos) {
         //  並進加速度
         let accel = force.clone();
         accel.multiplyScalar(this.invMass);
-        this.accel.add(accel /*force*/);
+        this.accel.add(accel);
+
+        //  力の向きをローカル座標系に変換
+        let wlq = this.quaternion.clone();
+        wlq.conjugate();
+        force.applyQuaternion(wlq);
+
         //  ワールド座標系でのベクトルと外積を取ってトルクを求める
         let torque = new THREE.Vector3();
-        torque.crossVectors(w_pos, force);
+        torque.crossVectors(l_pos, force);
         torque.x *= this.invI[0];
         torque.y *= this.invI[1];
         torque.z *= this.invI[2];
@@ -188,6 +194,7 @@ class RigidBody {
         d_omega[0][0] += this.d_omega.x;
         d_omega[1][0] += this.d_omega.y;
         d_omega[2][0] += this.d_omega.z;
+
 
         //  角速度からクォータニオンの時間微分を求める(dq = 1/2q*wv)
         let vec_qw = new THREE.Quaternion(omega.x, omega.y, omega.z, 0);
