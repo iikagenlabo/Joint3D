@@ -72,7 +72,7 @@ class Joint3D {
 
         //  エラー補正用の差分
         let err = this.p_err.clone();
-        // err.add(this.v_err);
+        err.add(this.v_err);
 
         //  速度
         let u = [[0], [0], [0], [0], [0], [0],
@@ -90,12 +90,12 @@ class Joint3D {
         if (this.body_b != null) {
             let vel = this.body_b.velocity.clone();
             vel.add(err);
-            u[0] = [vel.x + err.x];
-            u[1] = [vel.y + err.y];
-            u[2] = [vel.z + err.z];
-            u[3] = [this.body_b.omega.x];
-            u[4] = [this.body_b.omega.y];
-            u[5] = [this.body_b.omega.z];
+            u[6] = [vel.x + err.x];
+            u[7] = [vel.y + err.y];
+            u[8] = [vel.z + err.z];
+            u[9] = [this.body_b.omega.x];
+            u[10] = [this.body_b.omega.y];
+            u[11] = [this.body_b.omega.z];
         }
 
         //  外力
@@ -221,7 +221,6 @@ class RevoluteJoint extends Joint3D {
         }
         this.v_err.copy(wvel_b);
         this.v_err.sub(wvel_a);
-        this.v_err.multiplyScalar(0.3);          //  ここの係数を入れないと安定しない
-        //  速度補正はいらないかも？
+        this.v_err.multiplyScalar(0.1);          //  ここの係数を入れないと安定しない
     }
 }

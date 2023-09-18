@@ -261,7 +261,7 @@ class RigidPendulum extends RigidBody {
         rod.position.y += 2.0;
 
         // rod.position.y = 2.0;
-        rod.omega.y = 10.0;
+        rod.omega.y = 100.0;
         rod.updatePosRot();
 
         joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 0, 0));

@@ -112,6 +112,7 @@ class RigidBody {
     getLocalPointVelocity(l_pos) {
 		var p_vel = this.omega.clone();
         p_vel.cross(l_pos);
+        p_vel.applyQuaternion(this.quaternion);        //  ワールド座標系に変換
         p_vel.add(this.velocity);
 
         return p_vel;
