@@ -25,9 +25,11 @@ class DynamicsParameter {
     }
 
     //  位置と姿勢だけコピーする
-    copyPosQuat(trans) {
+    copyPosQuatVelOmega(trans) {
         this.position.copy(trans.position);
+        this.velocity.copy(trans.velocity);
         this.quaternion.copy(trans.quaternion);
+        this.omega.copy(trans.omega);
     }
 
     //  速度と加速度だけ足す
@@ -46,10 +48,24 @@ class DynamicsParameter {
         this.d_omega.multiplyScalar(scale);
     }
 
+    //  クォータニオンの掛け算
+    static crossQuaternion(a, b) {
+        let q = new THREE.Quaternion();
+
+        q.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
+        q.x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y
+        q.y = a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x
+        q.z = a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w
+
+        return q;
+    }
+
     //  角速度からクォータニオンの時間微分を求める(dq = 1/2q*wv)
     static calcDeltaQuaternion(quat, omega, delta_t = 1.0) {
         let vec_qw = new THREE.Quaternion(omega.x, omega.y, omega.z, 0);
-        let vec_dq = this.crossQuaternion(quat, vec_qw);
+        let vec_dq = DynamicsParameter.crossQuaternion(quat, vec_qw);
+        // let vec_dq = new THREE.Quaternion();
+        // vec_dq.multiplyQuaternions(quat, vec_qw);
         vec_dq.x *= 0.5 * delta_t;
         vec_dq.y *= 0.5 * delta_t;
         vec_dq.z *= 0.5 * delta_t;
@@ -139,8 +155,8 @@ class RigidBody {
     //  ループ実行前の処理
     preExec() {
         //  加速度をクリアする
-        this.accel.set(0, 0, 0);
-        this.d_omega.set(0, 0, 0);
+        this.dynamics.accel.set(0, 0, 0);
+        this.dynamics.d_omega.set(0, 0, 0);
     }
 
     //  表示モデルの生成
@@ -243,23 +259,43 @@ class RigidBody {
                 break;
             case 1:     //  ２段目
                 this.k[0].copy(this.dynamics);              //  １段目の結果を保存
-                this.dynamics.copyPosQuat(this.dyn_org);
+                this.dynamics.copyPosQuatVelOmega(this.dyn_org);
                 this.dynamics.updateStep(delta_t / 2);      //  ２段目の初期値を設定
                 break;
             case 2:     //  ３段目
                 this.k[1].copy(this.dynamics);              //  ２段目の結果を保存
-                this.dynamics.copyPosQuat(this.dyn_org);
+                this.dynamics.copyPosQuatVelOmega(this.dyn_org);
                 this.dynamics.updateStep(delta_t / 2);      //  ３段目の初期値を設定
                 break;
             case 3:     //  ４段目
                 this.k[2].copy(this.dynamics);              //  ３段目の結果を保存
-                this.dynamics.copyPosQuat(this.dyn_org);
+                this.dynamics.copyPosQuatVelOmega(this.dyn_org);
                 this.dynamics.updateStep(delta_t);          //  ４段目の初期値を設定
                 break;
         }
     }
 
-    calcRKAns() {
+    postRKCalc(step, delta_t) {
+        switch (step) {
+            case 0:     //  １段目
+                this.k[0].copy(this.dynamics);              //  １段目の結果を保存
+                break;
+            case 1:     //  ２段目
+                this.k[1].copy(this.dynamics);              //  ２段目の結果を保存
+                break;
+            case 2:     //  ３段目
+                this.dynamics.copyPosQuatVelOmega(this.dyn_org);
+                this.dynamics.updateStep(delta_t / 2);      //  ３段目の初期値を設定
+                break;
+            case 3:     //  ４段目
+                this.k[2].copy(this.dynamics);              //  ３段目の結果を保存
+                this.dynamics.copyPosQuatVelOmega(this.dyn_org);
+                this.dynamics.updateStep(delta_t);          //  ４段目の初期値を設定
+                break;
+        }
+    }
+
+    calcRKAns(delta_t) {
         //  ４段目の結果を保存
         this.k[3].copy(this.dynamics);
 
@@ -271,7 +307,14 @@ class RigidBody {
         ans.addVelAcl(this.k[2]);
         ans.addVelAcl(this.k[2]);
         ans.addVelAcl(this.k[3]);
-        ans.scaleVelAcl(1.0/6.0);
+        ans.scaleVelAcl(1.0 / 6.0);
+
+        //  元の位置をコピー
+        ans.copyPosQuatVelOmega(this.dyn_org);
+        //  dt分進める
+        ans.updateStep(delta_t);
+        //  値を更新する
+        this.dynamics.copy(ans);
     }
 
     //  クォータニオンの正規化
@@ -283,6 +326,23 @@ class RigidBody {
             len = 1 / len;
             return new THREE.Quaternion(q.x * len, q.y * len, q.z * len, q.w * len);
         }
+    }
+
+    updateRigidBodyRK() {
+        //  加速度
+        let accel = this.dynamics.accel.clone();
+        if (this.gravity) {
+            accel.y -= this.mass * MB.GRAVITY;
+        }
+        //  コリオリ力によるトルク
+        let torque = this.calcCoriolisForce(this.dynamics.omega);
+        let d_omega = math.multiply(this.inv_i, torque);    //  慣性モーメントで割って角加速度にする
+
+        //  加速度と角加速度を設定
+        this.dynamics.accel.copy(accel);
+        this.dynamics.d_omega.x += d_omega[0][0];
+        this.dynamics.d_omega.y += d_omega[1][0];
+        this.dynamics.d_omega.z += d_omega[2][0];
     }
 
     updateRigidBody(param) {
@@ -406,63 +466,58 @@ class RigidBody {
 
     exec(delta_t) {
         //  通常計算
-        this.exec_normal(delta_t);
+        // this.exec_normal(delta_t);
+        // this.exec_rk_test(delta_t);
+
+        //  結果を反映
+        this.calcRKAns(delta_t);
     }
 
-    exec_sp2(delta_t) {
-        //  加速度を求める
-        let accel = this.accel.clone();
-        if (this.gravity) {
-            accel.y -= this.mass * MB.GRAVITY;
+    //  外部から回すルンゲクッタ
+    execRK(step, delta_t) {
+        this.preRKCalc(step, delta_t);
+        this.preExec();
+        this.updateRigidBodyRK();
+        this.k[step].copy(this.dynamics);   //  結果を保存
+    }
+
+    exec_rk_flat(delta_t) {
+        this.preRKCalc(0, delta_t);
+        this.preExec();
+        this.updateRigidBodyRK();
+        this.k[0].copy(this.dynamics);
+
+        this.dynamics.copyPosQuatVelOmega(this.dyn_org);
+        this.dynamics.updateStep(delta_t / 2);
+        this.preExec();
+        this.updateRigidBodyRK();
+        this.k[1].copy(this.dynamics);
+
+        this.dynamics.copyPosQuatVelOmega(this.dyn_org);
+        this.dynamics.updateStep(delta_t / 2);
+        this.preExec();
+        this.updateRigidBodyRK();
+        this.k[2].copy(this.dynamics);
+
+        this.dynamics.copyPosQuatVelOmega(this.dyn_org);
+        this.dynamics.updateStep(delta_t);
+        this.preExec();
+        this.updateRigidBodyRK();
+        this.k[3].copy(this.dynamics);
+
+        this.calcRKAns(delta_t);
+    }
+
+    //  外部から回すルンゲクッタのテスト
+    exec_rk_test(delta_t) {
+        //  ４段目まで計算
+        for (var i = 0; i < 4; i++) {
+            this.preRKCalc(i, delta_t);
+            this.preExec();
+            this.updateRigidBodyRK();
         }
-        //  コリオリ力によるトルク
-        let torque = this.calcCoriolisForce(this.omega);
-        let d_omega = math.multiply(this.inv_i, torque);    //  慣性モーメントで割って角加速度にする
-        d_omega[0][0] += this.d_omega.x;
-        d_omega[1][0] += this.d_omega.y;
-        d_omega[2][0] += this.d_omega.z;
-
-        //  半ステップ先の速度を求める
-        let hvel = this.velocity.clone();
-        accel.multiplyScalar(0.5 * delta_t);
-        hvel.add(accel);
-        //  角速度
-        let homega = this.omega.clone();
-        let dom = new THREE.Vector3(
-            d_omega[0][0] * 0.5 * delta_t,
-            d_omega[1][0] * 0.5 * delta_t,
-            d_omega[2][0] * 0.5 * delta_t
-        );
-        homega.add(dom);
-
-        //  位置の更新
-        hvel.multiplyScalar(delta_t)
-        this.position.add(hvel);
-        let hdom = this.calcDeltaQuaternion(this.quaternion, homega);
-        this.quaternion.x += hdom.x * delta_t;
-        this.quaternion.y += hdom.y * delta_t;
-        this.quaternion.z += hdom.z * delta_t;
-        this.quaternion.w += hdom.w * delta_t;
-        this.quaternion.normalize();
-
-        //  新しい位置と速度での力を求める
-        torque = this.calcCoriolisForce(homega);
-        d_omega = math.multiply(this.inv_i, torque);    //  慣性モーメントで割って角加速度にする
-        d_omega[0][0] += this.d_omega.x;
-        d_omega[1][0] += this.d_omega.y;
-        d_omega[2][0] += this.d_omega.z;
-
-        //  速度の更新
-        hvel.add(accel);
-        this.velocity.copy(hvel);
-        //  角速度の更新
-        dom = new THREE.Vector3(
-            d_omega[0][0] * 0.5 * delta_t,
-            d_omega[1][0] * 0.5 * delta_t,
-            d_omega[2][0] * 0.5 * delta_t
-        );
-        homega.add(dom);
-        this.omega.copy(homega);
+        //  結果を反映
+        this.calcRKAns(delta_t);
     }
 
     //  シンプレクティック法で積分

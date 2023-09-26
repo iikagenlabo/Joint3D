@@ -275,7 +275,7 @@ class RigidPendulum extends RigidBody {
     var a = [
       [2.7531, 1.2737, 0.0],
       [1.2737, 1.9254, 0.0],
-      [0,      0,      3.6785],
+      [0, 0, 3.6785],
     ];
     var b = [
       0,
@@ -284,8 +284,7 @@ class RigidPendulum extends RigidBody {
     ];
     //  連立方程式を解く
     GaussSeidel(a, b, x);
-    for(var i = 0; i < x.length; i++)
-    {
+    for (var i = 0; i < x.length; i++) {
       console.log(i, " = ", x[i]);
     }
 
@@ -361,7 +360,11 @@ class RigidPendulum extends RigidBody {
       for (var lp1 = 0; lp1 < UpdateLoopCnt; lp1++) {
         switch (mode) {
           case 0:
-            rigid_body.exec(DeltaT);
+            //  RKで実行
+            for (var step = 0; step < 4; step++) {
+              rigid_body.execRK(step, DeltaT);
+            }
+            // rigid_body.exec(DeltaT);
             rigid_body.updatePosRot();
             break;
 
