@@ -237,10 +237,10 @@ class RigidPendulum extends RigidBody {
         rigid_body = new Spinner();
         scene.add(rigid_body.createModel());
         rigid_body.preCalcParameter();
-        rigid_body.position.y = 2.0;
+        rigid_body.dynamics.position.y = 2.0;
         //  初速
-        rigid_body.omega.x = 0.1;
-        rigid_body.omega.y = 10;
+        rigid_body.dynamics.omega.x = 0.1;
+        rigid_body.dynamics.omega.y = 10;
         //  表示位置更新
         rigid_body.updatePosRot();
         break;
@@ -257,11 +257,11 @@ class RigidPendulum extends RigidBody {
         //  支点の初期位置から引くと重心の初期位置になる
         var rap = new THREE.Vector3(0, -0.5, 0);
         rap.applyQuaternion(rod.quaternion);
-        rod.position.copy(rap);
-        rod.position.y += 2.0;
+        rod.dynamics.position.copy(rap);
+        rod.dynamics.position.y += 2.0;
 
         // rod.position.y = 2.0;
-        rod.omega.y = 100.0;
+        rod.dynamics.omega.y = 100.0;
         rod.updatePosRot();
 
         joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 0, 0));
