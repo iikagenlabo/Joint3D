@@ -109,6 +109,74 @@ class RigidPendulum extends RigidBody {
   }
 }
 
+//------------------------------------------------------------------------------
+//  車輪
+class Disc extends RigidBody {
+  constructor() {
+    super();
+
+    this.radius = 0.35;    //  半径
+    this.length = 0.03;    //  長さ
+
+    let Iy = this.mass * this.radius * this.radius * 0.5;
+    let Ixz = (this.radius * this.radius + this.length * this.length / 3) / 4 * this.mass;
+    this.inertia.x = Ixz;
+    this.inertia.y = Iy;
+    this.inertia.z = Ixz;
+
+    this.gravity = true;
+
+  }
+
+  preCalcParameter() {
+
+    super.preCalcParameter();
+  }
+
+  createModel(col) {
+    let material = new THREE.MeshPhongMaterial({
+      color: col,
+      shading: THREE.FlatShading
+    });
+
+    let base = new THREE.Object3D();
+
+    let len = 0.2;    //  円錐部分の長さ
+
+    //  円柱
+    let geom = new THREE.CylinderGeometry(this.radius, this.radius, this.length, 8);
+    let cy0 = new THREE.Mesh(geom, material);
+    cy0.castShadow = true;
+    // cy0.receiveShadow = true;
+    base.add(cy0);
+
+    //  車軸
+    let rod_r = 0.01;
+    let rod_len = 0.2;
+    let geom1 = new THREE.CylinderGeometry(rod_r, rod_r, rod_len, 8);
+    let cy1 = new THREE.Mesh(geom1, material);
+    cy1.castShadow = true;
+    base.add(cy1);
+
+    // //  上の円錐
+    // let geom1 = new THREE.CylinderGeometry(0, this.radius, len, 8);
+    // let cy1 = new THREE.Mesh(geom1, material);
+    // cy1.position.y = this.length / 2 - len / 2;
+    // cy1.castShadow = true;
+    // base.add(cy1);
+
+    // //  下の円錐
+    // let geom2 = new THREE.CylinderGeometry(this.radius, 0, len, 8);
+    // let cy2 = new THREE.Mesh(geom2, material);
+    // cy2.position.y = -this.length / 2 + len / 2;
+    // cy2.castShadow = true;
+    // base.add(cy2);
+
+    this.model = base;
+    return base;
+  }
+}
+
 (function () {
 
   //******************************************************************************
@@ -128,7 +196,8 @@ class RigidPendulum extends RigidBody {
 
   //  0: スピナー
   //  1: 剛体振り子
-  let mode = 0;
+  //  2: 車輪
+  let mode = 2;
 
   //  キー入力
   var key_input = new KeyInput();
@@ -252,11 +321,11 @@ class RigidPendulum extends RigidBody {
         rod.preCalcParameter();
 
         //  初期位置
-        rod.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 5);
+        rod.dynamics.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 5);
         //  重心位置から見た支点位置をクォータニオンで回転させて、
         //  支点の初期位置から引くと重心の初期位置になる
         var rap = new THREE.Vector3(0, -0.5, 0);
-        rap.applyQuaternion(rod.quaternion);
+        rap.applyQuaternion(rod.dynamics.quaternion);
         rod.dynamics.position.copy(rap);
         rod.dynamics.position.y += 2.0;
 
@@ -268,7 +337,30 @@ class RigidPendulum extends RigidBody {
 
         initArrow();
         break;
-    }
+
+        case 2:
+          //  車輪
+          rod = new Disc();
+          scene.add(rod.createModel(0x4040ff));
+          rod.preCalcParameter();
+  
+          //  初期位置
+          rod.dynamics.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
+          //  重心位置から見た支点位置をクォータニオンで回転させて、
+          //  支点の初期位置から引くと重心の初期位置になる
+          var rap = new THREE.Vector3(0, -0.1, 0);
+          rap.applyQuaternion(rod.dynamics.quaternion);
+          rod.dynamics.position.copy(rap);
+          rod.dynamics.position.y += 2.0;
+  
+          // rod.position.y = 2.0;
+          rod.dynamics.omega.y = 50.0;
+          rod.updatePosRot();
+  
+          joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.1, 0), null, new THREE.Vector3(0, 0, 0));
+  
+          initArrow();
+      }
 
     //  ガウスザイデルのテスト
     var x = [0, 0, 0];
@@ -309,10 +401,10 @@ class RigidPendulum extends RigidBody {
     let j0 = joint; //JointArray[2];
 
     var from = j0.wp_a.clone();
-    from.add(j0.body_a.position);
+    from.add(j0.body_a.dynamics.position);
     var to = j0.constraintForce.clone();
     to.multiplyScalar(-0.1);
-    to.add(j0.body_a.position);
+    to.add(j0.body_a.dynamics.position);
 
     var direction = to.clone().sub(from);
     var length = direction.length();
@@ -364,27 +456,39 @@ class RigidPendulum extends RigidBody {
             for (var step = 0; step < 4; step++) {
               rigid_body.execRK(step, DeltaT);
             }
-            // rigid_body.exec(DeltaT);
+            rigid_body.exec(DeltaT);
             rigid_body.updatePosRot();
             break;
 
           case 1:
+          case 2:
             //  計算実行前の処理
             rod.preExec();
 
-            //  ジョイントの計算
-            joint.preCalc(DeltaT);
-            //  拘束力の計算
-            joint.calcConstraint(DeltaT);
-            //  拘束力を剛体にかけて速度を更新する
-            joint.applyConstraintForce();
+            for (var step = 0; step < 4; step++) {
+              //  ジョイントの計算
+              joint.preCalc(DeltaT);
+              //  拘束力の計算
+              joint.calcConstraint(DeltaT);
+              //  拘束力を剛体にかけて速度を更新する
+              joint.applyConstraintForce();
+
+              rod.execRK(step, DeltaT);
+            }
+
+            // //  ジョイントの計算
+            // joint.preCalc(DeltaT);
+            // //  拘束力の計算
+            // joint.calcConstraint(DeltaT);
+            // //  拘束力を剛体にかけて速度を更新する
+            // joint.applyConstraintForce();
 
             rod.exec(DeltaT);
             rod.updatePosRot();
 
             setArrow();
             break;
-        }
+          }
       }
     }
   };

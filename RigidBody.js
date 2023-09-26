@@ -197,10 +197,10 @@ class RigidBody {
         //  並進加速度
         let accel = force.clone();
         accel.multiplyScalar(this.invMass);
-        this.accel.add(accel);
+        this.dynamics.accel.add(accel);
 
         //  力の向きをローカル座標系に変換
-        let wlq = this.quaternion.clone();
+        let wlq = this.dynamics.quaternion.clone();
         wlq.conjugate();
         force.applyQuaternion(wlq);
 
@@ -211,15 +211,15 @@ class RigidBody {
         torque.y *= this.invI[1];
         torque.z *= this.invI[2];
         //  角加速度を更新
-        this.d_omega.add(torque);
+        this.dynamics.d_omega.add(torque);
     }
 
     //  ローカルの点のワールド座標での速度を求める
     getLocalPointVelocity(l_pos) {
-        var p_vel = this.omega.clone();
+        var p_vel = this.dynamics.omega.clone();
         p_vel.cross(l_pos);
-        p_vel.applyQuaternion(this.quaternion);        //  ワールド座標系に変換
-        p_vel.add(this.velocity);
+        p_vel.applyQuaternion(this.dynamics.quaternion);        //  ワールド座標系に変換
+        p_vel.add(this.dynamics.velocity);
 
         return p_vel;
     }
@@ -264,26 +264,6 @@ class RigidBody {
                 break;
             case 2:     //  ３段目
                 this.k[1].copy(this.dynamics);              //  ２段目の結果を保存
-                this.dynamics.copyPosQuatVelOmega(this.dyn_org);
-                this.dynamics.updateStep(delta_t / 2);      //  ３段目の初期値を設定
-                break;
-            case 3:     //  ４段目
-                this.k[2].copy(this.dynamics);              //  ３段目の結果を保存
-                this.dynamics.copyPosQuatVelOmega(this.dyn_org);
-                this.dynamics.updateStep(delta_t);          //  ４段目の初期値を設定
-                break;
-        }
-    }
-
-    postRKCalc(step, delta_t) {
-        switch (step) {
-            case 0:     //  １段目
-                this.k[0].copy(this.dynamics);              //  １段目の結果を保存
-                break;
-            case 1:     //  ２段目
-                this.k[1].copy(this.dynamics);              //  ２段目の結果を保存
-                break;
-            case 2:     //  ３段目
                 this.dynamics.copyPosQuatVelOmega(this.dyn_org);
                 this.dynamics.updateStep(delta_t / 2);      //  ３段目の初期値を設定
                 break;
@@ -775,56 +755,3 @@ class RigidBody {
 //  いらないところを整理しないといけないな
 
 //  https://qiita.com/GANTZ/items/8a9d52c91cce902b44c9
-
-//  ばねダンパー系のシンプレクティック法を使ったコード
-class SpringDamperSystem {
-    constructor(mass, springConstant, dampingCoefficient, initialPosition, initialVelocity) {
-        this.mass = mass;
-        this.springConstant = springConstant;
-        this.dampingCoefficient = dampingCoefficient;
-        this.position = initialPosition;
-        this.velocity = initialVelocity;
-    }
-
-    // 力を計算する関数
-    calculateForce() {
-        const springForce = -this.springConstant * this.position;
-        const dampingForce = -this.dampingCoefficient * this.velocity;
-        return springForce + dampingForce;
-    }
-
-    // シンプレクティック法（Velocity Verlet法）で次の状態を計算する関数
-    update(deltaTime) {
-        // 半ステップ先の速度を計算
-        const halfStepVelocity = this.velocity + 0.5 * deltaTime * this.calculateForce() / this.mass;
-
-        // 位置を更新
-        this.position += deltaTime * halfStepVelocity;
-
-        // 力を更新（新しい位置での力）
-        const forcePrime = -this.springConstant * this.position - this.dampingCoefficient * halfStepVelocity;
-
-        // 速度を更新
-        this.velocity = halfStepVelocity + 0.5 * deltaTime * forcePrime / this.mass;
-    }
-}
-
-// パラメータ設定
-const mass = 1.0;  // 質量
-const springConstant = 1.0;  // ばね定数
-const dampingCoefficient = 0.2;  // 減衰係数
-const initialPosition = 1.0;  // 初期位置
-const initialVelocity = 0.0;  // 初期速度
-
-// システム初期化
-const system = new SpringDamperSystem(mass, springConstant, dampingCoefficient, initialPosition, initialVelocity);
-
-// シミュレーション設定
-const deltaTime = 0.01;  // 時間ステップ
-const totalSteps = 1000;  // 総ステップ数
-
-// シミュレーション実行
-for (let step = 0; step < totalSteps; ++step) {
-    system.update(deltaTime);
-    console.log(`Step: ${step}, Position: ${system.position}, Velocity: ${system.velocity}`);
-}
