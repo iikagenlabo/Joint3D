@@ -262,7 +262,135 @@ class RigidBody {
         this.omega.set(param[10], param[11], param[12]);
     }
 
+    //  角速度からクォータニオンの時間微分を求める(dq = 1/2q*wv)
+    calcDeltaQuaternion(quat, omega)
+    {
+        let vec_qw = new THREE.Quaternion(omega.x, omega.y, omega.z, 0);
+        let vec_dq = this.crossQuaternion(quat, vec_qw);
+        vec_dq.x *= 0.5;
+        vec_dq.y *= 0.5;
+        vec_dq.z *= 0.5;
+        vec_dq.w *= 0.5;
+
+        return vec_dq;
+    }
+
     exec(delta_t) {
+        this.exec_normal(delta_t);
+    }
+
+    exec_sp2(delta_t) {
+        //  加速度を求める
+        let accel = this.accel.clone();
+        if(this.gravity) {
+            accel.y -= this.mass * MB.GRAVITY;
+        }
+        //  コリオリ力によるトルク
+        let torque = this.calcCoriolisForce(this.omega);
+        let d_omega = math.multiply(this.inv_i, torque);    //  慣性モーメントで割って角加速度にする
+        d_omega[0][0] += this.d_omega.x;
+        d_omega[1][0] += this.d_omega.y;
+        d_omega[2][0] += this.d_omega.z;
+
+        //  半ステップ先の速度を求める
+        let hvel = this.velocity.clone();
+        accel.multiplyScalar(0.5*delta_t);
+        hvel.add(accel);
+        //  角速度
+        let homega = this.omega.clone();
+        let dom = new THREE.Vector3(
+            d_omega[0][0] * 0.5*delta_t,
+            d_omega[1][0] * 0.5*delta_t,
+            d_omega[2][0] * 0.5*delta_t
+        );
+        homega.add(dom);
+
+        //  位置の更新
+        hvel.multiplyScalar(delta_t)
+        this.position.add(hvel);
+        let hdom = this.calcDeltaQuaternion(this.quaternion, homega);
+        this.quaternion.x += hdom.x * delta_t;
+        this.quaternion.y += hdom.y * delta_t;
+        this.quaternion.z += hdom.z * delta_t;
+        this.quaternion.w += hdom.w * delta_t;
+        this.quaternion.normalize();
+        
+        //  新しい位置と速度での力を求める
+        torque = this.calcCoriolisForce(homega);
+        d_omega = math.multiply(this.inv_i, torque);    //  慣性モーメントで割って角加速度にする
+        d_omega[0][0] += this.d_omega.x;
+        d_omega[1][0] += this.d_omega.y;
+        d_omega[2][0] += this.d_omega.z;
+
+        //  速度の更新
+        hvel.add(accel);
+        this.velocity.copy(hvel);
+        //  角速度の更新
+        dom = new THREE.Vector3(
+            d_omega[0][0] * 0.5*delta_t,
+            d_omega[1][0] * 0.5*delta_t,
+            d_omega[2][0] * 0.5*delta_t
+        );
+        homega.add(dom);
+        this.omega.copy(homega);
+    }
+
+    //  シンプレクティック法で積分
+    //  でも加速していってしまうかも
+    exec_sp(delta_t) {
+        //  加速度を求める
+        let accel = this.accel.clone();
+        if(this.gravity) {
+            accel.y -= this.mass * MB.GRAVITY;
+        }
+        //  コリオリ力によるトルク
+        let torque = this.calcCoriolisForce(this.omega);
+        let d_omega = math.multiply(this.inv_i, torque);    //  慣性モーメントで割って角加速度にする
+        d_omega[0][0] += this.d_omega.x;
+        d_omega[1][0] += this.d_omega.y;
+        d_omega[2][0] += this.d_omega.z;
+
+        //  位置の更新 v*dt + a/2*dt^2
+        let dv = this.velocity.clone();
+        dv.multiplyScalar(delta_t);
+        accel.multiplyScalar(0.5*delta_t*delta_t);
+        this.position.add(dv);
+        this.position.add(accel);
+
+        //  角速度からクォータニオンの時間微分を求める(dq = 1/2q*wv)
+        let vec_dq = this.calcDeltaQuaternion(this.quaternion, this.omega);
+
+        //  回転角の更新 v*dt + a/2*dt^2
+        let dq = vec_dq.clone();
+        dq.x *= delta_t;
+        dq.y *= delta_t;
+        dq.z *= delta_t;
+        dq.w *= delta_t;
+
+        let dom = new THREE.Vector3(
+            d_omega[0][0] * 0.5*delta_t*delta_t,
+            d_omega[1][0] * 0.5*delta_t*delta_t,
+            d_omega[2][0] * 0.5*delta_t*delta_t
+        );
+        let vec_dom = this.calcDeltaQuaternion(this.quaternion, dom);
+        this.quaternion.x += dq.x + vec_dom.x;
+        this.quaternion.y += dq.y + vec_dom.y;
+        this.quaternion.z += dq.z + vec_dom.z;
+        this.quaternion.w += dq.w + vec_dom.w;
+        this.quaternion.normalize();
+
+        //  速度を更新 v + (a + next_a)/2 * dt
+        accel.multiplyScalar(delta_t);
+        this.velocity.add(accel);
+
+        //  角速度を更新
+        this.omega.x += d_omega[0][0] * delta_t;
+        this.omega.y += d_omega[1][0] * delta_t;
+        this.omega.z += d_omega[2][0] * delta_t;
+    }
+
+    //  ルンゲクッタで更新する
+    exec_rk(delta_t) {
         let param = this.setArrayFromParameter();
 
         // let ret = this.updateRigidBody(param);
@@ -279,11 +407,6 @@ class RigidBody {
     }
 
     exec_normal(delta_t) {
-        // let q = this.quaternion;
-        // let w = this.omega;
-        // console.log('Q:', q.w, q.x, q.y, q.z);
-        // console.log('W:', w.x, w.y, w.z);
-
         //  位置を更新
         var dvel = this.velocity.clone();
         dvel.multiplyScalar(delta_t);
@@ -485,3 +608,55 @@ class RigidBody {
 
 //  https://qiita.com/GANTZ/items/8a9d52c91cce902b44c9
 
+//  ばねダンパー系のシンプレクティック法を使ったコード
+class SpringDamperSystem {
+    constructor(mass, springConstant, dampingCoefficient, initialPosition, initialVelocity) {
+        this.mass = mass;
+        this.springConstant = springConstant;
+        this.dampingCoefficient = dampingCoefficient;
+        this.position = initialPosition;
+        this.velocity = initialVelocity;
+    }
+
+    // 力を計算する関数
+    calculateForce() {
+        const springForce = -this.springConstant * this.position;
+        const dampingForce = -this.dampingCoefficient * this.velocity;
+        return springForce + dampingForce;
+    }
+
+    // シンプレクティック法（Velocity Verlet法）で次の状態を計算する関数
+    update(deltaTime) {
+        // 半ステップ先の速度を計算
+        const halfStepVelocity = this.velocity + 0.5 * deltaTime * this.calculateForce() / this.mass;
+
+        // 位置を更新
+        this.position += deltaTime * halfStepVelocity;
+
+        // 力を更新（新しい位置での力）
+        const forcePrime = -this.springConstant * this.position - this.dampingCoefficient * halfStepVelocity;
+
+        // 速度を更新
+        this.velocity = halfStepVelocity + 0.5 * deltaTime * forcePrime / this.mass;
+    }
+}
+
+// パラメータ設定
+const mass = 1.0;  // 質量
+const springConstant = 1.0;  // ばね定数
+const dampingCoefficient = 0.2;  // 減衰係数
+const initialPosition = 1.0;  // 初期位置
+const initialVelocity = 0.0;  // 初期速度
+
+// システム初期化
+const system = new SpringDamperSystem(mass, springConstant, dampingCoefficient, initialPosition, initialVelocity);
+
+// シミュレーション設定
+const deltaTime = 0.01;  // 時間ステップ
+const totalSteps = 1000;  // 総ステップ数
+
+// シミュレーション実行
+for (let step = 0; step < totalSteps; ++step) {
+    system.update(deltaTime);
+    console.log(`Step: ${step}, Position: ${system.position}, Velocity: ${system.velocity}`);
+}

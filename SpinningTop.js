@@ -128,7 +128,7 @@ class RigidPendulum extends RigidBody {
 
   //  0: スピナー
   //  1: 剛体振り子
-  let mode = 1;
+  let mode = 0;
 
   //  キー入力
   var key_input = new KeyInput();
