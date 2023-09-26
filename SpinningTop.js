@@ -118,6 +118,8 @@ class Disc extends RigidBody {
     this.radius = 0.35;    //  半径
     this.length = 0.03;    //  長さ
 
+    this.mass = 2.0;
+
     let Iy = this.mass * this.radius * this.radius * 0.5;
     let Ixz = (this.radius * this.radius + this.length * this.length / 3) / 4 * this.mass;
     this.inertia.x = Ixz;
@@ -157,20 +159,6 @@ class Disc extends RigidBody {
     let cy1 = new THREE.Mesh(geom1, material);
     cy1.castShadow = true;
     base.add(cy1);
-
-    // //  上の円錐
-    // let geom1 = new THREE.CylinderGeometry(0, this.radius, len, 8);
-    // let cy1 = new THREE.Mesh(geom1, material);
-    // cy1.position.y = this.length / 2 - len / 2;
-    // cy1.castShadow = true;
-    // base.add(cy1);
-
-    // //  下の円錐
-    // let geom2 = new THREE.CylinderGeometry(this.radius, 0, len, 8);
-    // let cy2 = new THREE.Mesh(geom2, material);
-    // cy2.position.y = -this.length / 2 + len / 2;
-    // cy2.castShadow = true;
-    // base.add(cy2);
 
     this.model = base;
     return base;
@@ -353,8 +341,7 @@ class Disc extends RigidBody {
           rod.dynamics.position.copy(rap);
           rod.dynamics.position.y += 2.0;
   
-          // rod.position.y = 2.0;
-          rod.dynamics.omega.y = 50.0;
+          rod.dynamics.omega.y = -50.0;
           rod.updatePosRot();
   
           joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.1, 0), null, new THREE.Vector3(0, 0, 0));
