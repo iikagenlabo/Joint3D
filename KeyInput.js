@@ -1,8 +1,12 @@
 //	キー入力.
-var KeyInput = function() {
+var KeyInput = function () {
   //	キーのビット定数.
   this.pause = (1 << 0);
   this.step = (1 << 1);
+
+  this.key1 = (1 << 2);
+  this.key2 = (1 << 3);
+  this.key3 = (1 << 4);
 
   this.mouse_button = (1 << 8);
 
@@ -21,7 +25,7 @@ var KeyInput = function() {
   this.trigger = 0;
 
   //	キー入力値の初期化.
-  this.initialize = function() {
+  this.initialize = function () {
     this.up = false;
     this.down = false;
     this.left = false;
@@ -30,22 +34,22 @@ var KeyInput = function() {
     //	キー入力イベントを設定.
     var self = this;
 
-  	//	キーが押された.
-  	document.onkeydown = function(ev) {
-  		var event = ev? ev : window.event;
-  		return self.updateKeyState(event.keyCode, true);
-  	};
+    //	キーが押された.
+    document.onkeydown = function (ev) {
+      var event = ev ? ev : window.event;
+      return self.updateKeyState(event.keyCode, true);
+    };
 
-  	//	キーが離された.
-  	document.onkeyup = function(ev) {
-  		var event = ev? ev : window.event;
-  		return self.updateKeyState(event.keyCode, false);
-  	};
+    //	キーが離された.
+    document.onkeyup = function (ev) {
+      var event = ev ? ev : window.event;
+      return self.updateKeyState(event.keyCode, false);
+    };
   };
 
   //	キー入力の更新.
-  this.updateKeyState = function(keycode, flag) {
-    //		console.log(keycode + ":" + flag);
+  this.updateKeyState = function (keycode, flag) {
+    // console.log(keycode + ":" + flag);
 
     switch (keycode) {
       case 37:
@@ -61,6 +65,16 @@ var KeyInput = function() {
         this.down = flag;
         return false;
 
+      case 49:  // 1
+        flag ? this.level |= this.key1 : this.level &= ~this.key1;
+        return false;
+      case 50:  // 2
+        flag ? this.level |= this.key2 : this.level &= ~this.key2;
+        return false;
+      case 51:  // 3
+        flag ? this.level |= this.key3 : this.level &= ~this.key3;
+        return false;
+
       case 80:
         flag ? this.level |= this.pause : this.level &= ~this.pause;
         return false; //	p
@@ -73,7 +87,7 @@ var KeyInput = function() {
   };
 
   //	マウスクリック.
-  this.updateMouseState = function(ev, flag) {
+  this.updateMouseState = function (ev, flag) {
     //	とりあえず何か押されてたら記録する.
     flag ? this.level |= this.mouse_button : this.level &= ~this.mouse_button;
 
@@ -90,7 +104,7 @@ var KeyInput = function() {
   };
 
   //	毎フレームの実行処理.
-  this.update = function() {
+  this.update = function () {
     //	トリガーを生成する.
     this.trigger = this.level & (~this.old_level);
 

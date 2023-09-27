@@ -288,7 +288,41 @@ class Disc extends RigidBody {
     // top_obj.addTopModel2();
     top_obj.initialize();
 
-    switch (mode) {
+    //  モード毎の初期化
+    initMode(mode);
+
+    //  ガウスザイデルのテスト
+    // var x = [0, 0, 0];
+    // var a = [
+    //   [2.7531, 1.2737, 0.0],
+    //   [1.2737, 1.9254, 0.0],
+    //   [0, 0, 3.6785],
+    // ];
+    // var b = [
+    //   0,
+    //   -9.81,
+    //   0
+    // ];
+    // //  連立方程式を解く
+    // GaussSeidel(a, b, x);
+    // for (var i = 0; i < x.length; i++) {
+    //   console.log(i, " = ", x[i]);
+    // }
+  }
+
+  function initMode(mode_num) {
+    //  Sceneから削除
+    if(rigid_body) {
+      scene.remove(rigid_body.model);
+    }
+    if(rod) {
+      scene.remove(rod.model);
+    }
+    if(arrow0) {
+      scene.remove(arrow0);
+    }
+
+    switch (mode_num) {
       case 0:
         //  テニスラケット効果を調べる物体
         rigid_body = new Spinner();
@@ -318,7 +352,7 @@ class Disc extends RigidBody {
         rod.dynamics.position.y += 2.0;
 
         // rod.position.y = 2.0;
-        rod.dynamics.omega.y = 100.0;
+        rod.dynamics.omega.y = 10.0;
         rod.updatePosRot();
 
         joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 0, 0));
@@ -326,48 +360,30 @@ class Disc extends RigidBody {
         initArrow();
         break;
 
-        case 2:
-          //  車輪
-          rod = new Disc();
-          scene.add(rod.createModel(0x4040ff));
-          rod.preCalcParameter();
-  
-          //  初期位置
-          rod.dynamics.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
-          //  重心位置から見た支点位置をクォータニオンで回転させて、
-          //  支点の初期位置から引くと重心の初期位置になる
-          var rap = new THREE.Vector3(0, -0.1, 0);
-          rap.applyQuaternion(rod.dynamics.quaternion);
-          rod.dynamics.position.copy(rap);
-          rod.dynamics.position.y += 2.0;
-  
-          rod.dynamics.omega.y = -50.0;
-          rod.updatePosRot();
-  
-          joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.1, 0), null, new THREE.Vector3(0, 0, 0));
-  
-          initArrow();
-      }
+      case 2:
+        //  車輪
+        rod = new Disc();
+        scene.add(rod.createModel(0x4040ff));
+        rod.preCalcParameter();
 
-    //  ガウスザイデルのテスト
-    var x = [0, 0, 0];
-    var a = [
-      [2.7531, 1.2737, 0.0],
-      [1.2737, 1.9254, 0.0],
-      [0, 0, 3.6785],
-    ];
-    var b = [
-      0,
-      -9.81,
-      0
-    ];
-    //  連立方程式を解く
-    GaussSeidel(a, b, x);
-    for (var i = 0; i < x.length; i++) {
-      console.log(i, " = ", x[i]);
+        //  初期位置
+        rod.dynamics.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
+        //  重心位置から見た支点位置をクォータニオンで回転させて、
+        //  支点の初期位置から引くと重心の初期位置になる
+        var rap = new THREE.Vector3(0, -0.1, 0);
+        rap.applyQuaternion(rod.dynamics.quaternion);
+        rod.dynamics.position.copy(rap);
+        rod.dynamics.position.y += 2.0;
+
+        rod.dynamics.omega.y = -50.0;
+        rod.updatePosRot();
+
+        joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.1, 0), null, new THREE.Vector3(0, 0, 0));
+
+        initArrow();
     }
-
   }
+
   //------------------------------------------------------------------------------
   //  矢印
   function initArrow() {
@@ -414,6 +430,21 @@ class Disc extends RigidBody {
       pause = !pause;
     }
 
+    //  オブジェクト切り替え
+    if (key_input.trigger & key_input.key1) {
+      mode = 0;
+      initMode(0);
+      pause = true;
+    } else if (key_input.trigger & key_input.key2) {
+      mode = 1;
+      initMode(1);
+      pause = true;
+    } else if (key_input.trigger & key_input.key3) {
+      mode = 2;
+      initMode(2);
+      pause = true;
+    }
+
     //	実行処理.
     if (pause == false || (key_input.trigger & key_input.step)) {
       //  カメラ移動
@@ -431,9 +462,9 @@ class Disc extends RigidBody {
 
 
       //  コマの運動計算.
-      for (var lp1 = 0; lp1 < UpdateLoopCnt; lp1++) {
-        top_obj.update(key_input);
-      }
+      // for (var lp1 = 0; lp1 < UpdateLoopCnt; lp1++) {
+      //   top_obj.update(key_input);
+      // }
 
       //  剛体テスト
       for (var lp1 = 0; lp1 < UpdateLoopCnt; lp1++) {
@@ -475,7 +506,7 @@ class Disc extends RigidBody {
 
             setArrow();
             break;
-          }
+        }
       }
     }
   };
