@@ -328,10 +328,10 @@ class Disc extends RigidBody {
         rigid_body = new Spinner();
         scene.add(rigid_body.createModel());
         rigid_body.preCalcParameter();
-        rigid_body.dynamics.position.y = 2.0;
+        rigid_body.getPosition().y = 2.0;
         //  初速
-        rigid_body.dynamics.omega.x = 0.1;
-        rigid_body.dynamics.omega.y = 10;
+        rigid_body.getOmega().x = 0.1;
+        rigid_body.getOmega().y = 10;
         //  表示位置更新
         rigid_body.updatePosRot();
         break;
@@ -343,16 +343,16 @@ class Disc extends RigidBody {
         rod.preCalcParameter();
 
         //  初期位置
-        rod.dynamics.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 5);
+        rod.getQuaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 5);
         //  重心位置から見た支点位置をクォータニオンで回転させて、
         //  支点の初期位置から引くと重心の初期位置になる
         var rap = new THREE.Vector3(0, -0.5, 0);
-        rap.applyQuaternion(rod.dynamics.quaternion);
-        rod.dynamics.position.copy(rap);
-        rod.dynamics.position.y += 2.0;
+        rap.applyQuaternion(rod.getQuaternion());
+        rod.getPosition().copy(rap);
+        rod.getPosition().y += 2.0;
 
         // rod.position.y = 2.0;
-        rod.dynamics.omega.y = 10.0;
+        rod.getOmega().y = 10.0;
         rod.updatePosRot();
 
         joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 0, 0));
@@ -367,15 +367,15 @@ class Disc extends RigidBody {
         rod.preCalcParameter();
 
         //  初期位置
-        rod.dynamics.quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
+        rod.getQuaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
         //  重心位置から見た支点位置をクォータニオンで回転させて、
         //  支点の初期位置から引くと重心の初期位置になる
         var rap = new THREE.Vector3(0, -0.1, 0);
-        rap.applyQuaternion(rod.dynamics.quaternion);
-        rod.dynamics.position.copy(rap);
-        rod.dynamics.position.y += 2.0;
+        rap.applyQuaternion(rod.getQuaternion());
+        rod.getPosition().copy(rap);
+        rod.getPosition().y += 2.0;
 
-        rod.dynamics.omega.y = -50.0;
+        rod.getOmega().y = -50.0;
         rod.updatePosRot();
 
         joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.1, 0), null, new THREE.Vector3(0, 0, 0));
@@ -404,10 +404,10 @@ class Disc extends RigidBody {
     let j0 = joint; //JointArray[2];
 
     var from = j0.wp_a.clone();
-    from.add(j0.body_a.dynamics.position);
+    from.add(j0.body_a.getPosition());
     var to = j0.constraintForce.clone();
     to.multiplyScalar(-0.1);
-    to.add(j0.body_a.dynamics.position);
+    to.add(j0.body_a.getPosition());
 
     var direction = to.clone().sub(from);
     var length = direction.length();

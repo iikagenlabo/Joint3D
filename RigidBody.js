@@ -132,6 +132,28 @@ class RigidBody {
         this.Width = 1;
     }
 
+    //  状態取得用
+    getPosition() {
+        return this.dynamics.position;
+    }
+    getVelocity() {
+        return this.dynamics.velocity;
+    }
+    getAccel() {
+        return this.dynamics.accel;
+    }
+
+    getQuaternion() {
+        return this.dynamics.quaternion;
+    }
+    getOmega() {
+        return this.dynamics.omega;
+    }
+    getDOmega() {
+        return this.dynamics.d_omega;
+    }
+
+
     preCalcParameter() {
         this.invMass = 1 / this.mass;
         this.invI = [

@@ -37,12 +37,12 @@ class Joint3D {
         let invIb = [0, 0, 0];
 
         if (this.body_a != null) {
-            this.wp_a.applyQuaternion(this.body_a.dynamics.quaternion);
+            this.wp_a.applyQuaternion(this.body_a.getQuaternion());
             invMa = this.body_a.invMass;
             invIa = this.body_a.invI;
         }
         if (this.body_b != null) {
-            this.wp_b.applyQuaternion(this.body_b.dynamics.quaternion);
+            this.wp_b.applyQuaternion(this.body_b.getQuaternion());
             invMb = this.body_b.invMass;
             invIb = this.body_b.invI;
         }
@@ -78,24 +78,24 @@ class Joint3D {
         let u = [[0], [0], [0], [0], [0], [0],
         [0], [0], [0], [0], [0], [0]];
         if (this.body_a != null) {
-            let vel = this.body_a.dynamics.velocity.clone();
+            let vel = this.body_a.getVelocity().clone();
             vel.sub(err);
             u[0] = [vel.x - err.x];
             u[1] = [vel.y - err.y];
             u[2] = [vel.z - err.z];
-            u[3] = [this.body_a.dynamics.omega.x];
-            u[4] = [this.body_a.dynamics.omega.y];
-            u[5] = [this.body_a.dynamics.omega.z];
+            u[3] = [this.body_a.getOmega().x];
+            u[4] = [this.body_a.getOmega().y];
+            u[5] = [this.body_a.getOmega().z];
         }
         if (this.body_b != null) {
-            let vel = this.body_b.dynamics.velocity.clone();
+            let vel = this.body_b.getVelocity().clone();
             vel.add(err);
             u[6] = [vel.x + err.x];
             u[7] = [vel.y + err.y];
             u[8] = [vel.z + err.z];
-            u[9] = [this.body_b.dynamics.omega.x];
-            u[10] = [this.body_b.dynamics.omega.y];
-            u[11] = [this.body_b.dynamics.omega.z];
+            u[9] = [this.body_b.getOmega().x];
+            u[10] = [this.body_b.getOmega().y];
+            u[11] = [this.body_b.getOmega().z];
         }
 
         //  外力
@@ -104,7 +104,7 @@ class Joint3D {
         if (this.body_a != null) {
             F[1] = [-this.body_a.mass * Joint3D.Gravity];   //  重力
             //  コリオリ力
-            let torque = this.body_a.calcCoriolisForce(this.body_a.dynamics.omega);
+            let torque = this.body_a.calcCoriolisForce(this.body_a.getOmega());
             F[3] = torque[0];
             F[4] = torque[1];
             F[5] = torque[2];
@@ -112,7 +112,7 @@ class Joint3D {
         if (this.body_b != null) {
             F[8] = [-this.body_b.mass * Joint3D.Gravity];   //  重力
             //  コリオリ力
-            let torque = this.body_b.calcCoriolisForce(this.body_b.omega);
+            let torque = this.body_b.calcCoriolisForce(this.body_b.getOmega());
             F[9] = torque[0];
             F[10] = torque[1];
             F[11] = torque[2];
@@ -156,12 +156,12 @@ class Joint3D {
         let wpos = new THREE.Vector3();
         if ((body_num == 0 || body_num == null) && this.body_a != null) {
             wpos.set(this.wp_a);
-            wpos.add(this.body_a.dynamics.position);
+            wpos.add(this.body_a.getPosition());
             return wpos;
         }
         if ((body_num == 1) && this.body_b != null) {
             wpos.set(this.wp_b);
-            wpos.add(this.body_b.dynamics.position);
+            wpos.add(this.body_b.getPosition());
             return wpos;
         }
 
@@ -184,14 +184,14 @@ class RevoluteJoint extends Joint3D {
         //  回転拘束部分
         let ra = MB.tilde([[this.lp_a.x], [this.lp_a.y], [this.lp_a.z]]);
         if (this.body_a != null) {
-            let lw_a = MB.QuatToMtx(this.body_a.dynamics.quaternion.toArray());
+            let lw_a = MB.QuatToMtx(this.body_a.getQuaternion().toArray());
             let Ja = math.multiply(math.multiply(lw_a, ra), -1);
             MB.copyArray(this.J, 3, 0, Ja, 3, 3);
         }
 
         let rb = MB.tilde([[this.lp_b.x], [this.lp_b.y], [this.lp_b.z]]);
         if (this.body_b != null) {
-            let lw_b = MB.QuatToMtx(this.body_b.dynamics.quaternion.toArray());
+            let lw_b = MB.QuatToMtx(this.body_b.getQuaternion().toArray());
             let Jb = math.multiply(lw_b, rb);
             MB.copyArray(this.J, 9, 0, Jb, 3, 3);
         }
