@@ -203,7 +203,7 @@ class Disc extends RigidBody {
 
   var rigid_body;
   let rod;
-  let joint;
+  let joint, joint2;
 
   let arrow0;
 
@@ -355,7 +355,7 @@ class Disc extends RigidBody {
         rod.getOmega().y = 10.0;
         rod.updatePosRot();
 
-        joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 0, 0));
+        joint = new BallJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 0, 0));
 
         initArrow();
         break;
@@ -378,7 +378,11 @@ class Disc extends RigidBody {
         rod.getOmega().y = -50.0;
         rod.updatePosRot();
 
-        joint = new RevoluteJoint(rod, new THREE.Vector3(0, 0.1, 0), null, new THREE.Vector3(0, 0, 0));
+        joint = new BallJoint(rod, new THREE.Vector3(0, 0.1, 0), null, new THREE.Vector3(0, 0, 0));
+
+        //  回転ジョイントテスト
+        joint2 = new RevoluteJoint(rod, new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0),
+                                   null, new THREE.Vector3(), new THREE.Vector3(1, 0, 0));
 
         initArrow();
     }
