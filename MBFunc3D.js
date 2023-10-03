@@ -137,16 +137,6 @@ var MBFunc3D = function() {
 
   //  クォータニオンからマトリクスへ変換
   this.QuatToMtx = function(q) {
-    // var x = q[0], y = q[1], z = q[2], w = q[3];
-
-    // var mtx = [
-    //   [ y*y - z*z - w*w + x*x, 2.0*(y*z - w*x),       2.0*(w*y + x*z) ],
-    //   [ 2.0*(y*z + w*x),       z*z - w*w - y*y + x*x, 2.0*(z*w - y*x) ],
-    //   [ 2.0*(w*y - z*x),       2.0*(z*w + y*x),       w*w - y*y - z*z + x*x ],
-    // ];
-
-    // return mtx;
-
     var E1 = q[3];
     var E2 = q[0];
     var E3 = q[1];
@@ -160,6 +150,17 @@ var MBFunc3D = function() {
 
     return c;
   };
+
+  //  THREE.Matrix3 から配列に変換
+  this.MtxToArray = function(mtx) {
+    let a = mtx.toArray();
+    let m = [
+      [a[0], a[1], a[2]],
+      [a[3], a[4], a[5]],
+      [a[6], a[7], a[8]]
+    ];
+    return m;
+  }
 
   //	２次元配列の生成.
   this.createArray = function(dx, dy) {

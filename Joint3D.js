@@ -21,6 +21,7 @@ class Joint3D {
 
         //  拘束力
         this.constraintForce = new THREE.Vector3();
+        this.constraintTorque = new THREE.Vector3();
 
         //  拘束補正値
         this.p_err = new THREE.Vector3();   //  位置差分
@@ -128,14 +129,18 @@ class Joint3D {
         Bvec = math.add(Bvec, u);
         Bvec = math.multiply(this.J, Bvec);
         //  普通の配列に変換
-        let Barr = [Bvec[0][0], Bvec[1][0], Bvec[2][0]];
-
-        let impulse = [0, 0, 0];
+        let Barr = [];
+        for (var i = 0; i < Bvec.length; i++)
+        {
+            Barr.push(Bvec[i][0]);
+        }
+        let impulse = [0, 0, 0, 0, 0, 0];
 
         //  連立方程式を解く A[3*3]I[3*1] = B[3*1]
         GaussSeidel(Amtx, Barr, impulse);
 
         this.constraintForce.set(impulse[0], impulse[1], impulse[2]);
+        this.constraintTorque.set(impulse[3], impulse[4], impulse[5]);
 
         return impulse;
     }
@@ -266,6 +271,15 @@ class RevoluteJoint extends Joint3D {
             let lw_a = MB.QuatToMtx(this.body_a.getQuaternion().toArray());
             let Ja = math.multiply(math.multiply(lw_a, ra), -1);
             MB.copyArray(this.J, 3, 0, Ja, 3, 3);
+
+            //  拘束軸をワールド座標に変換
+            let laxis = MB.MtxToArray(this.axis_a);
+            let waxis = math.multiply(lw_a, laxis);
+            //  回転軸のX,Y軸をヤコビアンに設定
+            let p = [[waxis[0][0], waxis[1][0], waxis[2][0]]];
+            MB.copyArray(this.J, 3, 3, p, 3, 1);
+            let q = [[waxis[0][1], waxis[1][1], waxis[2][1]]];
+            MB.copyArray(this.J, 3, 4, q, 3, 1);
         }
 
         let rb = MB.tilde([[this.lp_b.x], [this.lp_b.y], [this.lp_b.z]]);
@@ -273,14 +287,32 @@ class RevoluteJoint extends Joint3D {
             let lw_b = MB.QuatToMtx(this.body_b.getQuaternion().toArray());
             let Jb = math.multiply(lw_b, rb);
             MB.copyArray(this.J, 9, 0, Jb, 3, 3);
-        }
 
-        //  拘束軸をワールド座標に変換する
-        
+            //  拘束軸をワールド座標に変換
+            let laxis = MB.MtxToArray(this.axis_b);
+            let waxis = math.multiply(lw_b, laxis);
+            //  回転軸のX,Y軸をヤコビアンに設定
+            let p = [[-waxis[0][0], -waxis[1][0], -waxis[2][0]]];
+            MB.copyArray(this.J, 9, 3, p, 3, 1);
+            let q = [[-waxis[0][1], -waxis[1][1], -waxis[2][1]]];
+            MB.copyArray(this.J, 9, 4, q, 3, 1);
+        }
 
         //  ヤコビアンの転置
         this.JT = math.transpose(this.J);
- 
+
+        // Amtxの作成
+        this.Amtx = math.multiply(math.multiply(this.J, this.invM), this.JT);
+
+        //  ジョイントの位置のずれを求める
+        let wpos_a = this.getWorldPosition(0);
+        let wpos_b = this.getWorldPosition(1);
+
+        this.p_err.copy(wpos_b);
+        this.p_err.sub(wpos_a);
+        //  エラー補正係数を掛ける
+        this.p_err.multiplyScalar(0.2 / delta_t);
+
     }    
 
     //  Z軸を元にして、直交するX,Y軸を求める

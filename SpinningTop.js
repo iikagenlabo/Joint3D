@@ -505,6 +505,10 @@ class Disc extends RigidBody {
             // //  拘束力を剛体にかけて速度を更新する
             // joint.applyConstraintForce();
 
+            //  回転ジョイントのテスト
+            joint2.preCalc(DeltaT);
+            joint2.calcConstraint(DeltaT);
+
             rod.exec(DeltaT);
             rod.updatePosRot();
 
