@@ -153,6 +153,9 @@ class RigidBody {
         return this.dynamics.d_omega;
     }
 
+    isWorldBody() {
+        return false;
+    }
 
     preCalcParameter() {
         this.invMass = 1 / this.mass;
@@ -771,6 +774,19 @@ class RigidBody {
             [om.y, om.z, 0, -om.x],
             [om.z, -om.y, om.x, 0]
         ];
+    }
+}
+
+//  ワールド固定オブジェクト
+class WorldBody extends RigidBody
+{
+    constructor()
+    {
+        super();
+    }
+
+    isWorldBody() {
+        return true;
     }
 }
 
