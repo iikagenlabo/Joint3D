@@ -165,6 +165,31 @@ class Disc extends RigidBody {
   }
 }
 
+//------------------------------------------------------------------------------
+//  回転ジョイント用の棒
+class Rod extends RigidBody {
+  constructor() {
+    super();
+  }
+
+  createModel(col) {
+    let material = new THREE.MeshPhongMaterial({
+      color: col,
+      shading: THREE.FlatShading
+    });
+
+    let base = new THREE.Object3D();
+
+    //  直方体
+    let geom = new THREE.BoxGeometry(1.0, 0.1, 0.1);
+    let box = new THREE.Mesh(geom, material);
+    base.add(box);
+
+    this.model = base;
+    return base;
+  }
+}
+
 (function () {
 
   //******************************************************************************
@@ -185,7 +210,8 @@ class Disc extends RigidBody {
   //  0: スピナー
   //  1: 剛体振り子
   //  2: 車輪
-  let mode = 2;
+  //  3: 回転棒
+  let mode = 3;
 
   //  キー入力
   var key_input = new KeyInput();
@@ -205,7 +231,7 @@ class Disc extends RigidBody {
   let rod;
   let joint, joint2;
 
-  let arrow0;
+  let arrow0, axis0;
 
   //------------------------------------------------------------------------------
   //  初期化処理.
@@ -355,7 +381,7 @@ class Disc extends RigidBody {
         rod.getOmega().y = 10.0;
         rod.updatePosRot();
 
-        joint = new BallJoint(rod, new THREE.Vector3(0, 0.5, 0), null, new THREE.Vector3(0, 0, 0));
+        joint = new BallJoint(rod, new THREE.Vector3(0, 0.5, 0), new WorldBody(), new THREE.Vector3(0, 2.0, 0));
 
         initArrow();
         break;
@@ -385,7 +411,36 @@ class Disc extends RigidBody {
                                    null, new THREE.Vector3(), new THREE.Vector3(1, 0, 0));
 
         initArrow();
+        break;
+
+      case 3:   //  回転ジョイントテスト
+        rod = new Rod();
+        scene.add(rod.createModel(0x40ff40));
+        rod.preCalcParameter();
+
+        rod.getPosition().x = 0.5;
+        rod.getPosition().y += 2.0;
+        rod.updatePosRot();
+
+        //  回転ジョイント
+        joint = new RevoluteJoint(rod, new THREE.Vector3(-0.5, 0, 0), new THREE.Vector3(0, 1, 0),
+                                  new WorldBody(), new THREE.Vector3(0, 2.0, 0), new THREE.Vector3(0, 1, 0));
+
+        initAxis();
+        setAxis();
+        break;
     }
+  }
+
+  //------------------------------------------------------------------------------
+  //  座標軸
+  function initAxis() {
+    axis0 = new THREE.AxisHelper();
+    scene.add(axis0);
+  }
+
+  function setAxis() {
+    axis0.position.copy(rod.getPosition());
   }
 
   //------------------------------------------------------------------------------
@@ -446,6 +501,10 @@ class Disc extends RigidBody {
     } else if (key_input.trigger & key_input.key3) {
       mode = 2;
       initMode(2);
+      pause = true;
+    } else if (key_input.trigger & key_input.key4) {
+      mode = 3;
+      initMode(3);
       pause = true;
     }
 
@@ -513,6 +572,27 @@ class Disc extends RigidBody {
             rod.updatePosRot();
 
             setArrow();
+            break;
+
+          case 3:   //  回転ジョイント
+            //  計算実行前の処理
+            rod.preExec();
+
+            // for (var step = 0; step < 4; step++) {
+              //  ジョイントの計算
+              joint.preCalc(DeltaT);
+              //  拘束力の計算
+              joint.calcConstraint(DeltaT);
+              //  拘束力を剛体にかけて速度を更新する
+              joint.applyConstraintForce();
+
+            //   rod.execRK(step, DeltaT);
+            // }
+
+            rod.exec(DeltaT);
+            rod.updatePosRot();
+
+            setAxis();
             break;
         }
       }

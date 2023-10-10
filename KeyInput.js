@@ -7,6 +7,7 @@ var KeyInput = function () {
   this.key1 = (1 << 2);
   this.key2 = (1 << 3);
   this.key3 = (1 << 4);
+  this.key4 = (1 << 5);
 
   this.mouse_button = (1 << 8);
 
@@ -73,6 +74,9 @@ var KeyInput = function () {
         return false;
       case 51:  // 3
         flag ? this.level |= this.key3 : this.level &= ~this.key3;
+        return false;
+      case 52:  // 4
+        flag ? this.level |= this.key4 : this.level &= ~this.key4;
         return false;
 
       case 80:
