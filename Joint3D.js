@@ -38,12 +38,12 @@ class Joint3D {
         let invIa = [0, 0, 0];
         let invIb = [0, 0, 0];
 
-        if (this.body_a != null) {
+        if (this.body_a != null && !this.body_a.isWorldBody()) {
             this.wp_a.applyQuaternion(this.body_a.getQuaternion());
             invMa = this.body_a.invMass;
             invIa = this.body_a.invI;
         }
-        if (this.body_b != null) {
+        if (this.body_b != null && !this.body_b.isWorldBody()) {
             this.wp_b.applyQuaternion(this.body_b.getQuaternion());
             invMb = this.body_b.invMass;
             invIb = this.body_b.invI;
@@ -74,12 +74,12 @@ class Joint3D {
 
         //  エラー補正用の差分
         let err = this.p_err.clone();
-        err.add(this.v_err);
+        // err.add(this.v_err);
 
         //  速度
         let u = [[0], [0], [0], [0], [0], [0],
         [0], [0], [0], [0], [0], [0]];
-        if (this.body_a != null) {
+        if (this.body_a != null && !this.body_a.isWorldBody()) {
             let vel = this.body_a.getVelocity().clone();
             vel.sub(err);
             u[0] = [vel.x - err.x];
@@ -89,7 +89,7 @@ class Joint3D {
             u[4] = [this.body_a.getOmega().y];
             u[5] = [this.body_a.getOmega().z];
         }
-        if (this.body_b != null) {
+        if (this.body_b != null && !this.body_b.isWorldBody()) {
             let vel = this.body_b.getVelocity().clone();
             vel.add(err);
             u[6] = [vel.x + err.x];
@@ -103,7 +103,7 @@ class Joint3D {
         //  外力
         let F = [[0], [0], [0], [0], [0], [0],
         [0], [0], [0], [0], [0], [0]];
-        if (this.body_a != null) {
+        if (this.body_a != null && !this.body_a.isWorldBody()) {
             F[1] = [-this.body_a.mass * Joint3D.Gravity];   //  重力
             //  コリオリ力
             let torque = this.body_a.calcCoriolisForce(this.body_a.getOmega());
@@ -111,7 +111,7 @@ class Joint3D {
             F[4] = torque[1];
             F[5] = torque[2];
         }
-        if (this.body_b != null) {
+        if (this.body_b != null && !this.body_b.isWorldBody()) {
             F[8] = [-this.body_b.mass * Joint3D.Gravity];   //  重力
             //  コリオリ力
             let torque = this.body_b.calcCoriolisForce(this.body_b.getOmega());
@@ -147,12 +147,12 @@ class Joint3D {
 
     //  剛体に拘束力を掛ける
     applyConstraintForce() {
-        if (this.body_a != null) {
+        if (this.body_a != null && !this.body_a.isWorldBody()) {
             let cf = this.constraintForce.clone();
             cf.multiplyScalar(-1);
             this.body_a.applyImpulse(cf, this.lp_a);
         }
-        if (this.body_b != null) {
+        if (this.body_b != null && !this.body_b.isWorldBody()) {
             this.body_b.applyImpulse(this.constraintForce, this.lp_b);
         }
     }
@@ -161,12 +161,12 @@ class Joint3D {
     getWorldPosition(body_num) {
         let wpos = new THREE.Vector3();
         if ((body_num == 0 || body_num == null) && this.body_a != null) {
-            wpos.set(this.wp_a);
+            wpos.copy(this.wp_a);
             wpos.add(this.body_a.getPosition());
             return wpos;
         }
         if ((body_num == 1) && this.body_b != null) {
-            wpos.set(this.wp_b);
+            wpos.copy(this.wp_b);
             wpos.add(this.body_b.getPosition());
             return wpos;
         }
@@ -189,14 +189,14 @@ class BallJoint extends Joint3D {
         ];
         //  回転拘束部分
         let ra = MB.tilde([[this.lp_a.x], [this.lp_a.y], [this.lp_a.z]]);
-        if (this.body_a != null) {
+        if (this.body_a != null && !this.body_a.isWorldBody()) {
             let lw_a = MB.QuatToMtx(this.body_a.getQuaternion().toArray());
             let Ja = math.multiply(math.multiply(lw_a, ra), -1);
             MB.copyArray(this.J, 3, 0, Ja, 3, 3);
         }
 
         let rb = MB.tilde([[this.lp_b.x], [this.lp_b.y], [this.lp_b.z]]);
-        if (this.body_b != null) {
+        if (this.body_b != null && !this.body_b.isWorldBody()) {
             let lw_b = MB.QuatToMtx(this.body_b.getQuaternion().toArray());
             let Jb = math.multiply(lw_b, rb);
             MB.copyArray(this.J, 9, 0, Jb, 3, 3);
@@ -227,7 +227,7 @@ class BallJoint extends Joint3D {
         }
         this.v_err.copy(wvel_b);
         this.v_err.sub(wvel_a);
-        this.v_err.multiplyScalar(0.1);          //  ここの係数を入れないと安定しない
+        this.v_err.multiplyScalar(0.8);          //  ここの係数を入れないと安定しない
     }
 }
 
@@ -267,7 +267,7 @@ class RevoluteJoint extends Joint3D {
  
         //  回転拘束部分
         let ra = MB.tilde([[this.lp_a.x], [this.lp_a.y], [this.lp_a.z]]);
-        if (this.body_a != null) {
+        if (this.body_a != null && !this.body_a.isWorldBody()) {
             let lw_a = MB.QuatToMtx(this.body_a.getQuaternion().toArray());
             let Ja = math.multiply(math.multiply(lw_a, ra), -1);
             MB.copyArray(this.J, 3, 0, Ja, 3, 3);
@@ -283,7 +283,7 @@ class RevoluteJoint extends Joint3D {
         }
 
         let rb = MB.tilde([[this.lp_b.x], [this.lp_b.y], [this.lp_b.z]]);
-        if (this.body_b != null) {
+        if (this.body_b != null && !this.body_b.isWorldBody()) {
             let lw_b = MB.QuatToMtx(this.body_b.getQuaternion().toArray());
             let Jb = math.multiply(lw_b, rb);
             MB.copyArray(this.J, 9, 0, Jb, 3, 3);
@@ -354,5 +354,4 @@ class RevoluteJoint extends Joint3D {
                 p.y, q.y, n.y,
                 p.z, q.z, n.z);
     }
-
 }

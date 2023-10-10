@@ -378,7 +378,7 @@ class Disc extends RigidBody {
         rod.getOmega().y = -50.0;
         rod.updatePosRot();
 
-        joint = new BallJoint(rod, new THREE.Vector3(0, 0.1, 0), null, new THREE.Vector3(0, 0, 0));
+        joint = new BallJoint(rod, new THREE.Vector3(0, 0.1, 0), new WorldBody(), new THREE.Vector3(0, 2, 0));
 
         //  回転ジョイントテスト
         joint2 = new RevoluteJoint(rod, new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0),
