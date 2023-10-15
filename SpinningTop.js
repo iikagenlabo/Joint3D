@@ -170,6 +170,8 @@ class Disc extends RigidBody {
 class Rod extends RigidBody {
   constructor() {
     super();
+
+    this.gravity = true;
   }
 
   createModel(col) {
@@ -183,6 +185,7 @@ class Rod extends RigidBody {
     //  直方体
     let geom = new THREE.BoxGeometry(1.0, 0.1, 0.1);
     let box = new THREE.Mesh(geom, material);
+    box.castShadow = true;
     base.add(box);
 
     this.model = base;
@@ -426,6 +429,7 @@ class Rod extends RigidBody {
         joint = new RevoluteJoint(rod, new THREE.Vector3(-0.5, 0, 0), new THREE.Vector3(0, 1, 0),
                                   new WorldBody(), new THREE.Vector3(0, 2.0, 0), new THREE.Vector3(0, 1, 0));
 
+        joint.preCalc(DeltaT);
         initAxis();
         setAxis();
         break;
@@ -440,7 +444,18 @@ class Rod extends RigidBody {
   }
 
   function setAxis() {
-    axis0.position.copy(rod.getPosition());
+    //  回転ジョイントの軸の向きをaxisに設定する
+    let axis_mtx = joint.getJointAxisWorldMtx();
+    var arr = axis_mtx.elements;
+    axis0.matrix.makeBasis(new THREE.Vector3(arr[0], arr[3], arr[6]),
+                           new THREE.Vector3(arr[1], arr[4], arr[7]),
+                           new THREE.Vector3(arr[2], arr[5], arr[8]));
+
+    //  ワールド座標も設定
+    axis0.matrix.setPosition(joint.getWorldPosition(0));
+
+    //  renderで自動更新させないようにする
+    axis0.matrixAutoUpdate = false;
   }
 
   //------------------------------------------------------------------------------
@@ -565,8 +580,8 @@ class Rod extends RigidBody {
             // joint.applyConstraintForce();
 
             //  回転ジョイントのテスト
-            joint2.preCalc(DeltaT);
-            joint2.calcConstraint(DeltaT);
+            // joint2.preCalc(DeltaT);
+            // joint2.calcConstraint(DeltaT);
 
             rod.exec(DeltaT);
             rod.updatePosRot();

@@ -354,4 +354,24 @@ class RevoluteJoint extends Joint3D {
                 p.y, q.y, n.y,
                 p.z, q.z, n.z);
     }
+
+    //  ワールド座標系での回転軸をマトリクスで返す
+    getJointAxisWorldMtx() {
+        // if (this.body_a != null && !this.body_a.isWorldBody()) {
+
+        //  拘束軸をワールド座標に変換
+        let lw_a = MB.QuatToMtx(this.body_a.getQuaternion().toArray());
+        let laxis = MB.MtxToArray(this.axis_a);
+        let waxis = math.multiply(lw_a, laxis);
+
+        //  マトリクスに設定して返す
+        var axis_mtx = new THREE.Matrix3();
+
+        axis_mtx.set(waxis[0][0], waxis[0][1], waxis[0][2],
+                     waxis[1][0], waxis[1][1], waxis[1][2],
+                     waxis[2][0], waxis[2][1], waxis[2][2]);
+
+        return axis_mtx;
+    }
 }
+
