@@ -410,8 +410,8 @@ class Rod extends RigidBody {
         joint = new BallJoint(rod, new THREE.Vector3(0, 0.1, 0), new WorldBody(), new THREE.Vector3(0, 2, 0));
 
         //  回転ジョイントテスト
-        joint2 = new RevoluteJoint(rod, new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0),
-                                   null, new THREE.Vector3(), new THREE.Vector3(1, 0, 0));
+        // joint2 = new RevoluteJoint(rod, new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0),
+        //                            null, new THREE.Vector3(), new THREE.Vector3(1, 0, 0));
 
         initArrow();
         break;
@@ -579,10 +579,6 @@ class Rod extends RigidBody {
             // //  拘束力を剛体にかけて速度を更新する
             // joint.applyConstraintForce();
 
-            //  回転ジョイントのテスト
-            // joint2.preCalc(DeltaT);
-            // joint2.calcConstraint(DeltaT);
-
             rod.exec(DeltaT);
             rod.updatePosRot();
 
@@ -593,7 +589,7 @@ class Rod extends RigidBody {
             //  計算実行前の処理
             rod.preExec();
 
-            // for (var step = 0; step < 4; step++) {
+            for (var step = 0; step < 4; step++) {
               //  ジョイントの計算
               joint.preCalc(DeltaT);
               //  拘束力の計算
@@ -601,8 +597,8 @@ class Rod extends RigidBody {
               //  拘束力を剛体にかけて速度を更新する
               joint.applyConstraintForce();
 
-            //   rod.execRK(step, DeltaT);
-            // }
+              rod.execRK(step, DeltaT);
+            }
 
             rod.exec(DeltaT);
             rod.updatePosRot();

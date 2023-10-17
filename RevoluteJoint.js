@@ -24,13 +24,20 @@ class RevoluteJoint extends Joint3D {
         super.preCalc(delta_t);
 
         //  ヤコビアン[5*12]
+        // this.J = [
+        //     [1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0],
+        //     [0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0],
+        //     [0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0],
+        //     [0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0]
+        // ];
+
+        //  まずはボールジョイントと同じにして動くのを確認してみる
         this.J = [
             [1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0]
-        ]
+            [0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]
+        ];
  
         //  回転拘束部分
         let ra = MB.tilde([[this.lp_a.x], [this.lp_a.y], [this.lp_a.z]]);
@@ -40,13 +47,13 @@ class RevoluteJoint extends Joint3D {
             MB.copyArray(this.J, 3, 0, Ja, 3, 3);
 
             //  拘束軸をワールド座標に変換
-            let laxis = MB.MtxToArray(this.axis_a);
-            let waxis = math.multiply(lw_a, laxis);
-            //  回転軸のX,Y軸をヤコビアンに設定
-            let p = [[waxis[0][0], waxis[1][0], waxis[2][0]]];
-            MB.copyArray(this.J, 3, 3, p, 3, 1);
-            let q = [[waxis[0][1], waxis[1][1], waxis[2][1]]];
-            MB.copyArray(this.J, 3, 4, q, 3, 1);
+            // let laxis = MB.MtxToArray(this.axis_a);
+            // let waxis = math.multiply(lw_a, laxis);
+            // //  回転軸のX,Y軸をヤコビアンに設定
+            // let p = [[waxis[0][0], waxis[1][0], waxis[2][0]]];
+            // MB.copyArray(this.J, 3, 3, p, 3, 1);
+            // let q = [[waxis[0][1], waxis[1][1], waxis[2][1]]];
+            // MB.copyArray(this.J, 3, 4, q, 3, 1);
         }
 
         let rb = MB.tilde([[this.lp_b.x], [this.lp_b.y], [this.lp_b.z]]);
@@ -56,13 +63,13 @@ class RevoluteJoint extends Joint3D {
             MB.copyArray(this.J, 9, 0, Jb, 3, 3);
 
             //  拘束軸をワールド座標に変換
-            let laxis = MB.MtxToArray(this.axis_b);
-            let waxis = math.multiply(lw_b, laxis);
-            //  回転軸のX,Y軸をヤコビアンに設定
-            let p = [[-waxis[0][0], -waxis[1][0], -waxis[2][0]]];
-            MB.copyArray(this.J, 9, 3, p, 3, 1);
-            let q = [[-waxis[0][1], -waxis[1][1], -waxis[2][1]]];
-            MB.copyArray(this.J, 9, 4, q, 3, 1);
+            // let laxis = MB.MtxToArray(this.axis_b);
+            // let waxis = math.multiply(lw_b, laxis);
+            // //  回転軸のX,Y軸をヤコビアンに設定
+            // let p = [[-waxis[0][0], -waxis[1][0], -waxis[2][0]]];
+            // MB.copyArray(this.J, 9, 3, p, 3, 1);
+            // let q = [[-waxis[0][1], -waxis[1][1], -waxis[2][1]]];
+            // MB.copyArray(this.J, 9, 4, q, 3, 1);
         }
 
         //  ヤコビアンの転置
@@ -124,8 +131,6 @@ class RevoluteJoint extends Joint3D {
 
     //  ワールド座標系での回転軸をマトリクスで返す
     getJointAxisWorldMtx() {
-        // if (this.body_a != null && !this.body_a.isWorldBody()) {
-
         //  拘束軸をワールド座標に変換
         let lw_a = MB.QuatToMtx(this.body_a.getQuaternion().toArray());
         let laxis = MB.MtxToArray(this.axis_a);
