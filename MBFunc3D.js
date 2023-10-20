@@ -151,6 +151,23 @@ var MBFunc3D = function() {
     return c;
   };
 
+  this.QuatToMatrix3 = function(quat) {
+    let q = quat.toArray();
+    var E1 = q[3];
+    var E2 = q[0];
+    var E3 = q[1];
+    var E4 = q[2];
+
+    var m = new THREE.Matrix3();
+    m.set(
+        E2*E2-E3*E3-E4*E4+E1*E1, (E2*E3-E4*E1)*2,          (E4*E2+E3*E1)*2 ,
+       (E2*E3+E4*E1)*2,           E3*E3-E4*E4-E2*E2+E1*E1, (E3*E4-E2*E1)*2 ,
+       (E4*E2-E3*E1)*2,          (E3*E4+E2*E1)*2,           E4*E4-E2*E2-E3*E3+E1*E1 
+    );
+
+    return m;
+  };
+
   //  THREE.Matrix3 から配列に変換
   this.MtxToArray = function(mtx) {
     let a = mtx.toArray();

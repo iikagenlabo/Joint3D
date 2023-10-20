@@ -10,14 +10,17 @@ class RevoluteJoint extends Joint3D {
         this.axis_b = new THREE.Matrix3();
 
         this.axis_a.set(0, 0, laxis_a.x,
-                        0, 0, laxis_a.y,
-                        0, 0, laxis_a.z);
+            0, 0, laxis_a.y,
+            0, 0, laxis_a.z);
         this.planeSpace(this.axis_a);
 
         this.axis_b.set(0, 0, laxis_b.x,
-                        0, 0, laxis_b.y,
-                        0, 0, laxis_b.z);
+            0, 0, laxis_b.y,
+            0, 0, laxis_b.z);
         this.planeSpace(this.axis_b);
+
+        //  debug用描画座標軸
+        this.arrow = [];
     }
 
     preCalc(delta_t) {
@@ -38,7 +41,7 @@ class RevoluteJoint extends Joint3D {
             [0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0],
             [0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]
         ];
- 
+
         //  回転拘束部分
         let ra = MB.tilde([[this.lp_a.x], [this.lp_a.y], [this.lp_a.z]]);
         if (this.body_a != null && !this.body_a.isWorldBody()) {
@@ -87,7 +90,7 @@ class RevoluteJoint extends Joint3D {
         //  エラー補正係数を掛ける
         this.p_err.multiplyScalar(0.2 / delta_t);
 
-    }    
+    }
 
     //  Z軸を元にして、直交するX,Y軸を求める
     planeSpace(mtx) {
@@ -96,10 +99,9 @@ class RevoluteJoint extends Joint3D {
         var q = new THREE.Vector3();
         n.fromArray(mtx.elements, 2 * 3);     //  Z軸
 
-        if(n.z > Joint3D.Sqrt12)
-        {
+        if (n.z > Joint3D.Sqrt12) {
             //  p は yz 平面上
-            let a = n.y*n.y + n.z*n.z;
+            let a = n.y * n.y + n.z * n.z;
             let k = 1.0 / Math.sqrt(a);
             p.x = 0;
             p.y = -n.z * k;
@@ -109,10 +111,9 @@ class RevoluteJoint extends Joint3D {
             q.y = -n.x * p.z;
             q.z = n.x * p.y;
         }
-        else
-        {
+        else {
             //  p は xy 平面上
-            let a = n.x*n.x + n.y*n.y;
+            let a = n.x * n.x + n.y * n.y;
             let k = 1.0 / Math.sqrt(a);
             p.x = -n.y * k;
             p.y = n.x * k;
@@ -125,8 +126,8 @@ class RevoluteJoint extends Joint3D {
 
         //  マトリクスに設定する
         mtx.set(p.x, q.x, n.x,
-                p.y, q.y, n.y,
-                p.z, q.z, n.z);
+            p.y, q.y, n.y,
+            p.z, q.z, n.z);
     }
 
     //  ワールド座標系での回転軸をマトリクスで返す
@@ -135,15 +136,70 @@ class RevoluteJoint extends Joint3D {
         let lw_a = MB.QuatToMtx(this.body_a.getQuaternion().toArray());
         let laxis = MB.MtxToArray(this.axis_a);
         let waxis = math.multiply(lw_a, laxis);
+        let lw_mtx = MB.QuatToMatrix3(this.body_a.getQuaternion());
+
+        //  それぞれの軸のベクトルを抽出
+        var xAxis = new THREE.Vector3();
+        var yAxis = new THREE.Vector3();
+        var zAxis = new THREE.Vector3();
+        xAxis.fromArray(this.axis_a.elements, 0 * 3);     //  X軸
+        yAxis.fromArray(this.axis_a.elements, 1 * 3);     //  Y軸
+        zAxis.fromArray(this.axis_a.elements, 2 * 3);     //  Z軸
+
+        //  ワールド座標系に変換
+        // let wx = math.multiply(lw_a, xAxis);
+        // let wy = math.multiply(lw_a, yAxis);
+        // let wz = math.multiply(lw_a, zAxis);
+        xAxis.applyMatrix3(lw_mtx);
+        yAxis.applyMatrix3(lw_mtx);
+        zAxis.applyMatrix3(lw_mtx);
 
         //  マトリクスに設定して返す
         var axis_mtx = new THREE.Matrix3();
 
-        axis_mtx.set(waxis[0][0], waxis[0][1], waxis[0][2],
-                     waxis[1][0], waxis[1][1], waxis[1][2],
-                     waxis[2][0], waxis[2][1], waxis[2][2]);
+        axis_mtx.set(xAxis.x, xAxis.y, xAxis.z,
+                     yAxis.x, yAxis.y, yAxis.z,
+                     zAxis.x, zAxis.y, zAxis.z);
+        // axis_mtx.set(xAxis.x, yAxis.x, zAxis.x,
+        //     xAxis.y, yAxis.y, zAxis.y,
+        //     xAxis.z, yAxis.z, zAxis.z);
+        // axis_mtx.set(waxis[0][0], waxis[0][1], waxis[0][2],
+        //              waxis[1][0], waxis[1][1], waxis[1][2],
+        //              waxis[2][0], waxis[2][1], waxis[2][2]);
 
         return axis_mtx;
+    }
+
+    //  描画する座標軸を初期化してsceneに登録
+    initAxis(scene) {
+        let length = 1.0;
+        let origin = new THREE.Vector3();
+
+        this.arrow[0] = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), origin, length, 0xff0000);
+        this.arrow[1] = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), origin, length, 0x00ff00);
+        this.arrow[2] = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), origin, length, 0x0000ff);
+
+        scene.add(this.arrow[0]);
+        scene.add(this.arrow[1]);
+        scene.add(this.arrow[2]);
+    }
+
+    //  座標軸の更新
+    updateAxis() {
+        if (this.arrow.length == 0) return;
+
+        let axis = this.getJointAxisWorldMtx();
+        let wpos = this.getWorldPosition(0); 
+        var arr = axis.elements;
+
+        this.arrow[0].setDirection(new THREE.Vector3(arr[0], arr[3], arr[6]));
+        this.arrow[1].setDirection(new THREE.Vector3(arr[1], arr[4], arr[7]));
+        this.arrow[2].setDirection(new THREE.Vector3(arr[2], arr[5], arr[8]));
+
+        for(var i = 0; i < 3; i++)
+        {
+            this.arrow[i].position.set(wpos.x, wpos.y, wpos.z);
+        }
     }
 }
 

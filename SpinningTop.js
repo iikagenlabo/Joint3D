@@ -430,8 +430,11 @@ class Rod extends RigidBody {
                                   new WorldBody(), new THREE.Vector3(0, 2.0, 0), new THREE.Vector3(0, 1, 0));
 
         joint.preCalc(DeltaT);
-        initAxis();
-        setAxis();
+        // initAxis();
+        // setAxis();
+
+        joint.initAxis(scene);
+        joint.updateAxis();
         break;
     }
   }
@@ -603,7 +606,9 @@ class Rod extends RigidBody {
             rod.exec(DeltaT);
             rod.updatePosRot();
 
-            setAxis();
+            joint.updateAxis();
+
+            // setAxis();
             break;
         }
       }
