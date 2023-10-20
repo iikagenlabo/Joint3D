@@ -172,6 +172,17 @@ class Rod extends RigidBody {
     super();
 
     this.gravity = true;
+    this.mass = 1.0;
+    let length = 1.0;
+    let width = 0.1;
+
+    let hl = length*0.5;
+    let hw = width*0.5;
+    let Ix = this.mass / 3.0 * (hl*hl + hw*hw);
+    let Iyz = this.mass / 3.0 * (hw*hw + hw*hw);
+    this.inertia.x = Ix;
+    this.inertia.y = Iyz;
+    this.inertia.z = Iyz;
   }
 
   createModel(col) {

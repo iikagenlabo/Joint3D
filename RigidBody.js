@@ -239,6 +239,21 @@ class RigidBody {
         this.dynamics.d_omega.add(torque);
     }
 
+    //  剛体にトルクをかける
+    applyTorque(torque) {
+        //  トルクをローカル座標系に変換
+        let wlq = this.dynamics.quaternion.clone();
+        wlq.conjugate();
+        torque.applyQuaternion(wlq);
+
+        //  慣性モーメントで割って角加速度を求める
+        torque.x *= this.invI[0];
+        torque.y *= this.invI[1];
+        torque.z *= this.invI[2];
+        //  角加速度を更新
+        this.dynamics.d_omega.add(torque);
+    }
+
     //  ローカルの点のワールド座標での速度を求める
     getLocalPointVelocity(l_pos) {
         var p_vel = this.dynamics.omega.clone();

@@ -27,20 +27,20 @@ class RevoluteJoint extends Joint3D {
         super.preCalc(delta_t);
 
         //  ヤコビアン[5*12]
-        // this.J = [
-        //     [1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0],
-        //     [0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0],
-        //     [0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0],
-        //     [0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0],
-        //     [0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0]
-        // ];
-
-        //  まずはボールジョイントと同じにして動くのを確認してみる
         this.J = [
             [1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]
+            [0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0]
         ];
+
+        //  まずはボールジョイントと同じにして動くのを確認してみる
+        // this.J = [
+        //     [1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0],
+        //     [0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0],
+        //     [0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, 0]
+        // ];
 
         //  回転拘束部分
         let ra = MB.tilde([[this.lp_a.x], [this.lp_a.y], [this.lp_a.z]]);
@@ -48,6 +48,21 @@ class RevoluteJoint extends Joint3D {
             let lw_a = MB.QuatToMtx(this.body_a.getQuaternion().toArray());
             let Ja = math.multiply(math.multiply(lw_a, ra), -1);
             MB.copyArray(this.J, 3, 0, Ja, 3, 3);
+
+            //  拘束軸をワールド座標に変換
+            let axis = this.getJointAxisWorldMtx();
+            var arr = axis.elements;
+            //  回転軸のX,Y軸をヤコビアンに設定
+            var p = [[arr[0], arr[3], arr[6]]];
+            MB.copyArray(this.J, 3, 3, p, 3, 1);
+            var q = [[arr[1], arr[4], arr[7]]];
+            MB.copyArray(this.J, 3, 4, q, 3, 1);
+            
+            //  剛体B側にも設定
+            p = [[-arr[0], -arr[3], -arr[6]]];
+            MB.copyArray(this.J, 9, 3, p, 3, 1);
+            q = [[-arr[1], -arr[4], -arr[7]]];
+            MB.copyArray(this.J, 9, 4, q, 3, 1);
 
             //  拘束軸をワールド座標に変換
             // let laxis = MB.MtxToArray(this.axis_a);
@@ -168,6 +183,28 @@ class RevoluteJoint extends Joint3D {
         //              waxis[2][0], waxis[2][1], waxis[2][2]);
 
         return axis_mtx;
+    }
+
+    //  剛体に拘束力を掛ける
+    applyConstraintForce() {
+        //  トルクを拘束軸座標系からワールド座標系に変換する
+        var ct = this.constraintTorque.clone();
+        var joint_mtx = this.getJointAxisWorldMtx();
+        joint_mtx.transpose();
+        ct.applyMatrix3(joint_mtx);
+
+        if (this.body_a != null && !this.body_a.isWorldBody()) {
+            let cf = this.constraintForce.clone();
+            cf.multiplyScalar(-1);
+            this.body_a.applyImpulse(cf, this.lp_a);
+            ct.multiplyScalar(-1);
+            this.body_a.applyTorque(ct);
+        }
+        if (this.body_b != null && !this.body_b.isWorldBody()) {
+            this.body_b.applyImpulse(this.constraintForce, this.lp_b);
+            ct.multiplyScalar(-1);
+            this.body_b.applyTorque(ct);
+        }
     }
 
     //  描画する座標軸を初期化してsceneに登録

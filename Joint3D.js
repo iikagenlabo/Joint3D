@@ -151,6 +151,7 @@ class Joint3D {
             let cf = this.constraintForce.clone();
             cf.multiplyScalar(-1);
             this.body_a.applyImpulse(cf, this.lp_a);
+            this.body_a.applyTorque(this.constraintTorque);
         }
         if (this.body_b != null && !this.body_b.isWorldBody()) {
             this.body_b.applyImpulse(this.constraintForce, this.lp_b);
