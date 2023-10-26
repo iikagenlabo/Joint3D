@@ -52,12 +52,15 @@ class RevoluteJoint extends Joint3D {
             //  拘束軸をワールド座標に変換
             let axis = this.getJointAxisWorldMtx();
             var arr = axis.elements;
+            //  ローカル座標系のまま設定してみる
+            // var arr = this.axis_a.elements;
             //  回転軸のX,Y軸をヤコビアンに設定
             var p = [[arr[0], arr[3], arr[6]]];
             MB.copyArray(this.J, 3, 3, p, 3, 1);
             var q = [[arr[1], arr[4], arr[7]]];
             MB.copyArray(this.J, 3, 4, q, 3, 1);
             
+
             //  剛体B側にも設定
             p = [[-arr[0], -arr[3], -arr[6]]];
             MB.copyArray(this.J, 9, 3, p, 3, 1);

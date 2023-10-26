@@ -236,10 +236,12 @@ class Rod extends RigidBody {
   //  定数.
   var GRAVITY = 9.81;
   //  ステップ時間
-  var DeltaT = 0.001;
+  // var DeltaT = 0.001;
+  var DeltaT = 0.01;
 
   //  updateのループ開始数
-  var UpdateLoopCnt = 10;
+  // var UpdateLoopCnt = 10;
+  var UpdateLoopCnt = 1;
 
   var rigid_body;
   let rod;
@@ -436,9 +438,16 @@ class Rod extends RigidBody {
         rod.getPosition().y += 2.0;
         rod.updatePosRot();
 
+        // rod.getOmega().y = 10; 
+
         //  回転ジョイント
-        joint = new RevoluteJoint(rod, new THREE.Vector3(-0.5, 0, 0), new THREE.Vector3(0, 1, 0),
-                                  new WorldBody(), new THREE.Vector3(0, 2.0, 0), new THREE.Vector3(0, 1, 0));
+        var axis = new THREE.Vector3(0, 0, 1);
+        axis.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI/4);
+
+        // joint = new RevoluteJoint(rod, new THREE.Vector3(-0.5, 0, 0), new THREE.Vector3(0, 1, 0),
+        //                           new WorldBody(), new THREE.Vector3(0, 2.0, 0), new THREE.Vector3(0, 1, 0));
+        joint = new RevoluteJoint(rod, new THREE.Vector3(-0.5, 0, 0), axis,
+　　　　　　　　　　　　　　　　　   new WorldBody(), new THREE.Vector3(0, 2.0, 0), new THREE.Vector3(0, 1, 0));
 
         joint.preCalc(DeltaT);
         // initAxis();
