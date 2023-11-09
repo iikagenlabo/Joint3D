@@ -177,6 +177,24 @@ class RigidBody {
         ];
     }
 
+    //  慣性テンソルの逆数を求める
+    calcInertiaTensor() {
+        //  慣性モーメントの逆数
+        const inv_i = [
+            [1 / this.inertia.x, 0, 0],
+            [0, 1 / this.inertia.y, 0],
+            [0, 0, 1 / this.inertia.z]
+        ];
+
+        //  回転マトリクス
+        const lw_mtx = MB.QuatToMtx(this.getQuaternion().toArray());
+        const wl_mtx = math.transpose(lw_mtx);
+
+        const invT = math.multiply(math.multiply(lw_mtx, inv_i), wl_mtx);
+
+        return invT;
+    }
+
     //  ループ実行前の処理
     preExec() {
         //  加速度をクリアする
@@ -284,8 +302,9 @@ class RigidBody {
 
         //  角加速度の計算
         //  コリオリ力(-tw * J * w)
-        let torque = math.multiply(tilde_omega, math.multiply(this.i_mtx, om))
+        let torque = math.multiply(tilde_omega, math.multiply(this.i_mtx, om));
         torque = math.multiply(torque, -1);
+        // torque = math.multiply(torque, 0);
 
         return torque;  //  [[x], [y], [z]]
     }
