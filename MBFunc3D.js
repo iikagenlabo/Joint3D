@@ -151,6 +151,12 @@ var MBFunc3D = function() {
     return c;
   };
 
+  this.QuaternionToMtx = function(quat) {
+    let q = [];
+    quat.toArray(q);
+    return this.QuatToMtx(q);
+  }
+
   this.QuatToMatrix3 = function(quat) {
     let q = quat.toArray();
     var E1 = q[3];

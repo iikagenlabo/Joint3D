@@ -37,16 +37,19 @@ class Joint3D {
         let invMb = 0;
         let invIa = [0, 0, 0];
         let invIb = [0, 0, 0];
+        let invITa, invITb;
 
         if (this.body_a != null && !this.body_a.isWorldBody()) {
             this.wp_a.applyQuaternion(this.body_a.getQuaternion());
             invMa = this.body_a.invMass;
             invIa = this.body_a.invI;
+            invITa = this.body_a.calcInertiaTensor();
         }
         if (this.body_b != null && !this.body_b.isWorldBody()) {
             this.wp_b.applyQuaternion(this.body_b.getQuaternion());
             invMb = this.body_b.invMass;
             invIb = this.body_b.invI;
+            invITb = this.body_b.calcInertiaTensor();
         }
 
         //  質量マトリクスの逆数[12*12]
@@ -64,6 +67,13 @@ class Joint3D {
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, invIb[1], 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, invIb[2]]
         ];
+
+        if (invITa != null) {
+            MB.copyArray(this.invM, 3, 3, invITa, 3, 3);
+        }
+        if (invITb != null) {
+            MB.copyArray(this.invM, 9, 9, invITb, 3, 3);
+        }
     }
 
     //  拘束力の計算
@@ -85,9 +95,14 @@ class Joint3D {
             u[0] = [vel.x - err.x];
             u[1] = [vel.y - err.y];
             u[2] = [vel.z - err.z];
-            u[3] = [this.body_a.getOmega().x];
-            u[4] = [this.body_a.getOmega().y];
-            u[5] = [this.body_a.getOmega().z];
+
+            let wom = this.body_a.getWorldOmega();
+            u[3] = [wom.x];
+            u[4] = [wom.y];
+            u[5] = [wom.z];
+            // u[3] = [this.body_a.getOmega().x];
+            // u[4] = [this.body_a.getOmega().y];
+            // u[5] = [this.body_a.getOmega().z];
         }
         if (this.body_b != null && !this.body_b.isWorldBody()) {
             let vel = this.body_b.getVelocity().clone();
@@ -95,9 +110,14 @@ class Joint3D {
             u[6] = [vel.x + err.x];
             u[7] = [vel.y + err.y];
             u[8] = [vel.z + err.z];
-            u[9] = [this.body_b.getOmega().x];
-            u[10] = [this.body_b.getOmega().y];
-            u[11] = [this.body_b.getOmega().z];
+
+            let wom = this.body_b.getWorldOmega();
+            u[9]  = [wom.x];
+            u[10] = [wom.y];
+            u[11] = [wom.z];
+            // u[9] = [this.body_b.getOmega().x];
+            // u[10] = [this.body_b.getOmega().y];
+            // u[11] = [this.body_b.getOmega().z];
         }
 
         //  外力

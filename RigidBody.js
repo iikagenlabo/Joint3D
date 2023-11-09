@@ -153,6 +153,12 @@ class RigidBody {
         return this.dynamics.d_omega;
     }
 
+    getWorldOmega() {
+        let wom = this.getOmega().clone();
+        wom.applyQuaternion(this.getQuaternion());
+        return wom;
+    }
+
     isWorldBody() {
         return false;
     }
@@ -175,6 +181,21 @@ class RigidBody {
             [0, 1 / this.inertia.y, 0],
             [0, 0, 1 / this.inertia.z]
         ];
+    }
+
+    //  現在の姿勢での慣性テンソルを求めて配列で返す
+    calcInertiaTensor() {
+        //  lw_mtxを求める
+        let lw_mtx = MB.QuaternionToMtx(this.getQuaternion());
+        let wl_mtx = math.transpose(lw_mtx);
+        //  元の慣性モーメント
+        var invI = [
+            [this.invI[0], 0, 0],
+            [0, this.invI[1], 0],
+            [0, 0, this.invI[2]]
+        ];
+
+        return math.multiply(math.multiply(lw_mtx, invI), wl_mtx);
     }
 
     //  ループ実行前の処理
@@ -242,7 +263,7 @@ class RigidBody {
     //  剛体にトルクをかける
     applyTorque(torque) {
         //  トルクをローカル座標系に変換
-        let wlq = this.dynamics.quaternion.clone();
+        let wlq = this.getQuaternion().clone();
         wlq.conjugate();
         torque.applyQuaternion(wlq);
 
