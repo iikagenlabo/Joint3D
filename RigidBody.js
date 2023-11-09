@@ -183,19 +183,22 @@ class RigidBody {
         ];
     }
 
-    //  現在の姿勢での慣性テンソルを求めて配列で返す
+    //  慣性テンソルの逆数を求める
     calcInertiaTensor() {
-        //  lw_mtxを求める
-        let lw_mtx = MB.QuaternionToMtx(this.getQuaternion());
-        let wl_mtx = math.transpose(lw_mtx);
-        //  元の慣性モーメント
-        var invI = [
-            [this.invI[0], 0, 0],
-            [0, this.invI[1], 0],
-            [0, 0, this.invI[2]]
+        //  慣性モーメントの逆数
+        const inv_i = [
+            [1 / this.inertia.x, 0, 0],
+            [0, 1 / this.inertia.y, 0],
+            [0, 0, 1 / this.inertia.z]
         ];
 
-        return math.multiply(math.multiply(lw_mtx, invI), wl_mtx);
+        //  回転マトリクス
+        const lw_mtx = MB.QuatToMtx(this.getQuaternion().toArray());
+        const wl_mtx = math.transpose(lw_mtx);
+
+        const invT = math.multiply(math.multiply(lw_mtx, inv_i), wl_mtx);
+
+        return invT;
     }
 
     //  ループ実行前の処理
@@ -305,8 +308,9 @@ class RigidBody {
 
         //  角加速度の計算
         //  コリオリ力(-tw * J * w)
-        let torque = math.multiply(tilde_omega, math.multiply(this.i_mtx, om))
+        let torque = math.multiply(tilde_omega, math.multiply(this.i_mtx, om));
         torque = math.multiply(torque, -1);
+        // torque = math.multiply(torque, 0);
 
         return torque;  //  [[x], [y], [z]]
     }
