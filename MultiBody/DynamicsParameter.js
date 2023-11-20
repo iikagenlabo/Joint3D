@@ -31,6 +31,11 @@ class DynamicsParameter {
         this.omega.copy(trans.omega);
     }
 
+    copyPosQuat(trans) {
+        this.position.copy(trans.position);
+        this.quaternion.copy(trans.quaternion);
+    }
+
     //  速度と加速度だけ足す
     addVelAcl(trans) {
         this.velocity.add(trans.velocity);
@@ -51,6 +56,11 @@ class DynamicsParameter {
         this.quaternion.w += trans.quaternion.w;
     }
 
+    addVel(trans) {
+        this.velocity.add(trans.velocity);
+        this.omega.add(trans.omega);
+    }
+
     //  速度と加速度だけスケールを掛ける
     scaleVelAcl(scale) {
         this.velocity.multiplyScalar(scale);
@@ -67,6 +77,11 @@ class DynamicsParameter {
         this.quaternion.y *= scale;
         this.quaternion.z *= scale;
         this.quaternion.w *= scale;
+    }
+
+    scaleVel(scale) {
+        this.velocity.multiplyScalar(scale);
+        this.omega.multiplyScalar(scale);
     }
 
     //  クォータニオンの掛け算
@@ -120,6 +135,23 @@ class DynamicsParameter {
         var d_omega = this.d_omega.clone();
         d_omega.multiplyScalar(delta_t);
         this.omega.add(d_omega);
+
+        //  角速度からクォータニオンを更新
+        //  角速度からクォータニオンの時間微分を求める(dq = 1/2wv*q)
+        let vec_dq = DynamicsParameter.calcDeltaQuaternionWorld(this.quaternion, this.omega, delta_t);
+
+        this.quaternion.x += vec_dq.x;
+        this.quaternion.y += vec_dq.y;
+        this.quaternion.z += vec_dq.z;
+        this.quaternion.w += vec_dq.w;
+        this.quaternion.normalize();
+    }
+
+    updateStep2(delta_t) {
+        //  速度で位置を更新
+        var vel = this.velocity.clone();
+        vel.multiplyScalar(delta_t);
+        this.position.add(vel);
 
         //  角速度からクォータニオンを更新
         //  角速度からクォータニオンの時間微分を求める(dq = 1/2wv*q)
