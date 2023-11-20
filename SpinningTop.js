@@ -1,6 +1,7 @@
+import { RigidBody } from "MultiBody/RigidBody.js";
 
 //  テニスラケット効果を調べる剛体
-class Spinner extends RigidBody {
+export class Spinner extends RigidBody {
   constructor() {
     super();
   }
@@ -225,7 +226,7 @@ class Rod extends RigidBody {
   //  1: 剛体振り子
   //  2: 車輪
   //  3: 回転棒
-  let mode = 3;
+  let mode = 0;
 
   //  キー入力
   var key_input = new KeyInput();
