@@ -163,6 +163,12 @@ class DynamicsParameter {
         this.quaternion.w += vec_dq.w;
         this.quaternion.normalize();
     }
+
+    debugPrint() {
+        console.log(" Omega:", this.omega.x, this.omega.y, this.omega.z);
+        console.log("dOmega:", this.d_omega.x, this.d_omega.y, this.d_omega.z);
+        console.log("  Quat:", this.quaternion.x, this.quaternion.y, this.quaternion.z, this.quaternion.w);
+    }
 }
 
 export { DynamicsParameter };
